@@ -278,6 +278,7 @@
           <div class="card-body">
             <p class="muted">Subi los datos actuales a Supabase o bajalos desde la nube. La app sigue funcionando offline con el almacenamiento local del navegador.</p>
             <div class="actions" style="margin-top:12px;">
+              <button class="btn primary" onclick="syncCloudNow()">Sincronizar ahora</button>
               <button class="btn primary" onclick="uploadToCloud()">Subir a Supabase</button>
               <button class="btn" onclick="downloadFromCloud()">Bajar de Supabase</button>
               <button class="btn" onclick="exportExcel()">Descargar Excel</button>
@@ -421,6 +422,9 @@ let supabaseClient = null;
 let cloudSession = null;
 let cloudAuthListenerReady = false;
 let cloudClientKey = '';
+let cloudSyncTimer = null;
+let cloudSyncing = false;
+let applyingCloudState = false;
 
 const CONCEPTOS = [
   { nombre: 'Sueldo caminito', tipo: 'ingreso', categoria: 'Sueldo Aless' },
@@ -553,6 +557,7 @@ function load() {
 function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   renderSidebar();
+  scheduleCloudSync();
 }
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1244,6 +1249,78 @@ function setCloudText(id, msg) {
   const el = document.getElementById(id);
   if (el) el.textContent = msg;
 }
+function normalizeKey(value) {
+  return String(value || '').trim().toLowerCase();
+}
+function normalizeFinanceState(data) {
+  return {
+    cuentas: Array.isArray(data?.cuentas) ? data.cuentas : [],
+    movimientos: Array.isArray(data?.movimientos) ? data.movimientos : [],
+    presupuestos: Array.isArray(data?.presupuestos) ? data.presupuestos : []
+  };
+}
+function mergeByIdOrKey(target, source, getKey, idMap) {
+  source.forEach(item => {
+    if (!item) return;
+    const byId = item.id ? target.find(x => x.id === item.id) : null;
+    const key = getKey(item);
+    const byKey = key ? target.find(x => getKey(x) === key) : null;
+    const existing = byId || byKey;
+    if (existing) {
+      if (item.id && existing.id && idMap) idMap[item.id] = existing.id;
+      Object.assign(existing, { ...item, id: existing.id });
+    } else {
+      target.push({ ...item, id: item.id || uid() });
+    }
+  });
+}
+function remapMovimientoAccounts(m, idMap) {
+  const out = { ...m };
+  if (out.cuentaId && idMap[out.cuentaId]) out.cuentaId = idMap[out.cuentaId];
+  if (out.cuentaDestId && idMap[out.cuentaDestId]) out.cuentaDestId = idMap[out.cuentaDestId];
+  return out;
+}
+function movimientoKey(m) {
+  return [
+    m.fecha,
+    normalizeKey(m.tipo),
+    Number(m.monto || 0).toFixed(2),
+    normalizeKey(m.concepto),
+    normalizeKey(m.desc),
+    normalizeKey(m.categoria),
+    m.cuentaId || '',
+    m.cuentaDestId || ''
+  ].join('|');
+}
+function mergeFinanceStates(localData, cloudData) {
+  const local = normalizeFinanceState(localData);
+  const cloud = normalizeFinanceState(cloudData);
+  const accountIdMap = {};
+  const merged = {
+    cuentas: local.cuentas.map(c => ({ ...c })),
+    movimientos: [],
+    presupuestos: local.presupuestos.map(p => ({ ...p }))
+  };
+  const accountKey = c => `${normalizeKey(c.tipo)}|${normalizeKey(c.nombre)}`;
+  mergeByIdOrKey(merged.cuentas, cloud.cuentas, accountKey, accountIdMap);
+
+  const addMovimiento = item => {
+    const mov = remapMovimientoAccounts(item, accountIdMap);
+    const exists = merged.movimientos.some(x => (mov.id && x.id === mov.id) || movimientoKey(x) === movimientoKey(mov));
+    if (!exists) merged.movimientos.push({ ...mov, id: mov.id || uid() });
+  };
+  local.movimientos.forEach(addMovimiento);
+  cloud.movimientos.forEach(addMovimiento);
+
+  const budgetKey = p => p.key || `${p.mes}_${p.categoria}`;
+  mergeByIdOrKey(merged.presupuestos, cloud.presupuestos.map(p => ({ ...p, key: budgetKey(p) })), budgetKey);
+  return merged;
+}
+function scheduleCloudSync(delay = 1500) {
+  if (applyingCloudState || !cloudSession || !supabaseClient) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => syncCloudNow(true), delay);
+}
 async function initSupabase() {
   const config = getCloudConfig();
   if (!config.url || !config.anonKey || !window.supabase) {
@@ -1265,9 +1342,10 @@ async function initSupabase() {
     if (!cloudAuthListenerReady) {
       cloudAuthListenerReady = true;
       supabaseClient.auth.onAuthStateChange((_event, session) => {
-        cloudSession = session;
-        if (document.getElementById('page-nube')?.classList.contains('active')) renderCloud();
-      });
+      cloudSession = session;
+      if (session) scheduleCloudSync(800);
+      if (document.getElementById('page-nube')?.classList.contains('active')) renderCloud();
+    });
     }
   }
   const { data } = await supabaseClient.auth.getSession();
@@ -1334,16 +1412,45 @@ async function requireCloudSession() {
   return true;
 }
 async function uploadToCloud() {
-  if (!(await requireCloudSession())) return;
-  setCloudText('sync-status', 'Subiendo datos...');
-  const payload = {
-    user_id: cloudSession.user.id,
-    data: state,
-    updated_at: new Date().toISOString()
-  };
-  const { error } = await supabaseClient.from('finance_states').upsert(payload, { onConflict: 'user_id' });
-  if (error) return setCloudText('sync-status', 'Error al subir: ' + error.message);
-  setCloudText('sync-status', 'Datos subidos a Supabase.');
+  return syncCloudNow();
+}
+async function syncCloudNow(silent = false) {
+  if (cloudSyncing) return;
+  const ok = await requireCloudSession();
+  if (!ok) return;
+  cloudSyncing = true;
+  if (!silent) setCloudText('sync-status', 'Sincronizando...');
+  try {
+    const { data, error } = await supabaseClient
+      .from('finance_states')
+      .select('data, updated_at')
+      .eq('user_id', cloudSession.user.id)
+      .maybeSingle();
+    if (error) throw error;
+
+    const merged = data?.data ? mergeFinanceStates(state, data.data) : normalizeFinanceState(state);
+    applyingCloudState = true;
+    state = merged;
+    save();
+    applyingCloudState = false;
+    refreshAll();
+
+    const payload = {
+      user_id: cloudSession.user.id,
+      data: state,
+      updated_at: new Date().toISOString()
+    };
+    const { error: upsertError } = await supabaseClient.from('finance_states').upsert(payload, { onConflict: 'user_id' });
+    if (upsertError) throw upsertError;
+    const msg = `Sincronizado. ${state.movimientos.length} movimientos unificados.`;
+    setCloudText('sync-status', msg);
+    if (!silent) toast('Datos sincronizados');
+  } catch (err) {
+    applyingCloudState = false;
+    setCloudText('sync-status', 'Error al sincronizar: ' + err.message);
+  } finally {
+    cloudSyncing = false;
+  }
 }
 async function downloadFromCloud() {
   if (!(await requireCloudSession())) return;
