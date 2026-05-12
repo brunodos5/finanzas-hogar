@@ -523,9 +523,10 @@ const ALL_CATEGORIAS = unique([...CATEGORIAS.ingreso, ...CATEGORIAS.gasto]);
 const COLORS = ['#25734b', '#235b9f', '#b23636', '#916400', '#7057a6', '#0f766e', '#c05220', '#557a2a', '#9d3560', '#64748b', '#7c4a03', '#0e7490'];
 const ICONS = { efectivo: '$', banco: 'B', tarjeta: 'T', ahorro: 'A', otro: 'O' };
 
-let state = { cuentas: [], movimientos: [], presupuestos: [] };
+let state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [] };
 let currentTipo = 'gasto';
 let editingCuentaId = null;
+let editingMovimientoId = null;
 let chartCat = null;
 let chartMonths = null;
 let bankImportRows = [];
@@ -570,7 +571,11 @@ function showPage(id) {
   if (id === 'nube') renderCloud();
 }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); editingCuentaId = null; }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id === 'modal-cuenta') editingCuentaId = null;
+  if (id === 'modal-mov') editingMovimientoId = null;
+}
 function fillSelect(el, values, selected, emptyLabel) {
   el.innerHTML = emptyLabel ? `<option value="">${emptyLabel}</option>` : '';
   values.forEach(v => {
@@ -604,6 +609,8 @@ function refreshSelectors() {
 }
 
 function openMovimiento() {
+  editingMovimientoId = null;
+  document.getElementById('mov-title').textContent = 'Nuevo movimiento';
   currentTipo = 'gasto';
   document.getElementById('m-desc').value = '';
   document.getElementById('m-monto').value = '';
@@ -614,19 +621,21 @@ function openMovimiento() {
   setTipo('gasto');
   openModal('modal-mov');
 }
-function setTipo(tipo) {
+function setTipo(tipo, keepValues = false) {
+  const currentConcepto = document.getElementById('m-concepto').value;
+  const currentCategoria = document.getElementById('m-categoria').value;
   currentTipo = tipo;
   document.querySelectorAll('.type-switch button').forEach(b => b.dataset.active = String(b.dataset.type === tipo));
   document.getElementById('m-dest-wrap').classList.toggle('hidden', tipo !== 'transferencia');
   document.getElementById('m-cuenta-label').firstChild.textContent = tipo === 'transferencia' ? 'Cuenta origen' : 'Cuenta';
   if (tipo === 'transferencia') {
-    fillSelect(document.getElementById('m-concepto'), ['Transferencia entre cuentas']);
-    fillSelect(document.getElementById('m-categoria'), ['Transferencia']);
+    fillSelect(document.getElementById('m-concepto'), ['Transferencia entre cuentas'], keepValues ? currentConcepto : '');
+    fillSelect(document.getElementById('m-categoria'), ['Transferencia'], keepValues ? currentCategoria : '');
   } else {
     const conceptos = CONCEPTOS.filter(c => c.tipo === tipo).map(c => c.nombre);
-    fillSelect(document.getElementById('m-concepto'), conceptos);
-    fillSelect(document.getElementById('m-categoria'), CATEGORIAS[tipo]);
-    onConceptoChange();
+    fillSelect(document.getElementById('m-concepto'), conceptos, keepValues ? currentConcepto : '');
+    fillSelect(document.getElementById('m-categoria'), CATEGORIAS[tipo], keepValues ? currentCategoria : '');
+    if (!keepValues) onConceptoChange();
   }
 }
 function onConceptoChange() {
@@ -646,16 +655,21 @@ function guardarMovimiento() {
   const cuentaId = document.getElementById('m-cuenta').value;
   const notas = document.getElementById('m-notas').value.trim();
   if (!concepto || !categoria || !desc || !monto || !fecha || !cuentaId) return toast('Completá concepto, categoría, monto, fecha y cuenta.');
-  const mov = { id: uid(), tipo: currentTipo, concepto, categoria, desc, monto: Math.abs(monto), fecha, cuentaId, notas };
+  const mov = { id: editingMovimientoId || uid(), tipo: currentTipo, concepto, categoria, desc, monto: Math.abs(monto), fecha, cuentaId, notas };
   if (currentTipo === 'transferencia') {
     mov.cuentaDestId = document.getElementById('m-cuenta-dest').value;
     if (!mov.cuentaDestId || mov.cuentaDestId === cuentaId) return toast('Elegí una cuenta destino diferente.');
   }
-  state.movimientos.push(mov);
+  if (editingMovimientoId) {
+    const idx = state.movimientos.findIndex(m => m.id === editingMovimientoId);
+    if (idx >= 0) state.movimientos[idx] = mov;
+  } else {
+    state.movimientos.push(mov);
+  }
   save();
   closeModal('modal-mov');
   refreshAll();
-  toast('Movimiento guardado');
+  toast(editingMovimientoId ? 'Movimiento actualizado' : 'Movimiento guardado');
 }
 function addMovimiento({ tipo, concepto, categoria, desc, monto, fecha, cuentaId, notas, cuentaDestId }) {
   const mov = { id: uid(), tipo, concepto, categoria, desc, monto: Math.abs(Number(monto) || 0), fecha, cuentaId, notas: notas || '' };
@@ -667,6 +681,35 @@ function eliminarMovimiento(id) {
   state.movimientos = state.movimientos.filter(m => m.id !== id);
   save();
   refreshAll();
+}
+
+function eliminarMovimiento(id) {
+  if (!confirm('Eliminar este movimiento?')) return;
+  if (!Array.isArray(state.deletedMovimientos)) state.deletedMovimientos = [];
+  if (!state.deletedMovimientos.includes(id)) state.deletedMovimientos.push(id);
+  state.movimientos = state.movimientos.filter(m => m.id !== id);
+  save();
+  refreshAll();
+  toast('Movimiento eliminado');
+}
+function editarMovimiento(id) {
+  const mov = state.movimientos.find(m => m.id === id);
+  if (!mov) return toast('No encontre ese movimiento.');
+  editingMovimientoId = id;
+  document.getElementById('mov-title').textContent = 'Editar movimiento';
+  fillSelect(document.getElementById('m-cuenta'), state.cuentas, mov.cuentaId);
+  fillSelect(document.getElementById('m-cuenta-dest'), state.cuentas, mov.cuentaDestId);
+  setTipo(mov.tipo || 'gasto');
+  document.getElementById('m-concepto').value = mov.concepto || '';
+  setTipo(mov.tipo || 'gasto', true);
+  document.getElementById('m-categoria').value = mov.categoria || '';
+  document.getElementById('m-desc').value = mov.desc || '';
+  document.getElementById('m-monto').value = mov.monto || '';
+  document.getElementById('m-fecha').value = mov.fecha || today();
+  document.getElementById('m-cuenta').value = mov.cuentaId || '';
+  document.getElementById('m-cuenta-dest').value = mov.cuentaDestId || '';
+  document.getElementById('m-notas').value = mov.notas || '';
+  openModal('modal-mov');
 }
 
 function calcCuenta(id) {
@@ -744,7 +787,7 @@ function renderRows(tbody, movs, withActions = true) {
       <td>${cuenta ? cuenta.nombre : '-'}</td>
       <td><span class="badge ${cls}">${m.tipo}</span></td>
       <td class="right ${cls}"><strong>${sign} ${money(m.monto)}</strong></td>
-      <td class="right"><button class="btn sm danger" onclick="eliminarMovimiento('${m.id}')">Eliminar</button></td>
+      <td class="right"><button class="btn sm" onclick="editarMovimiento('${m.id}')">Editar</button> <button class="btn sm danger" onclick="eliminarMovimiento('${m.id}')">Eliminar</button></td>
     </tr>`;
   }).join('');
 }
@@ -1256,7 +1299,8 @@ function normalizeFinanceState(data) {
   return {
     cuentas: Array.isArray(data?.cuentas) ? data.cuentas : [],
     movimientos: Array.isArray(data?.movimientos) ? data.movimientos : [],
-    presupuestos: Array.isArray(data?.presupuestos) ? data.presupuestos : []
+    presupuestos: Array.isArray(data?.presupuestos) ? data.presupuestos : [],
+    deletedMovimientos: Array.isArray(data?.deletedMovimientos) ? data.deletedMovimientos : []
   };
 }
 function mergeByIdOrKey(target, source, getKey, idMap) {
@@ -1299,13 +1343,15 @@ function mergeFinanceStates(localData, cloudData) {
   const merged = {
     cuentas: local.cuentas.map(c => ({ ...c })),
     movimientos: [],
-    presupuestos: local.presupuestos.map(p => ({ ...p }))
+    presupuestos: local.presupuestos.map(p => ({ ...p })),
+    deletedMovimientos: [...new Set([...local.deletedMovimientos, ...cloud.deletedMovimientos])]
   };
   const accountKey = c => `${normalizeKey(c.tipo)}|${normalizeKey(c.nombre)}`;
   mergeByIdOrKey(merged.cuentas, cloud.cuentas, accountKey, accountIdMap);
 
   const addMovimiento = item => {
     const mov = remapMovimientoAccounts(item, accountIdMap);
+    if (mov.id && merged.deletedMovimientos.includes(mov.id)) return;
     const exists = merged.movimientos.some(x => (mov.id && x.id === mov.id) || movimientoKey(x) === movimientoKey(mov));
     if (!exists) merged.movimientos.push({ ...mov, id: mov.id || uid() });
   };
@@ -1458,7 +1504,7 @@ async function downloadFromCloud() {
   const { data, error } = await supabaseClient.from('finance_states').select('data, updated_at').eq('user_id', cloudSession.user.id).single();
   if (error) return setCloudText('sync-status', 'No encontré datos en Supabase para este usuario.');
   if (!confirm('Esto reemplaza los datos locales con lo guardado en Supabase. ¿Continuar?')) return;
-  state = { cuentas: [], movimientos: [], presupuestos: [], ...(data.data || {}) };
+  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], ...(data.data || {}) };
   save();
   refreshAll();
   setCloudText('sync-status', `Datos descargados. Última nube: ${new Date(data.updated_at).toLocaleString('es-UY')}`);
