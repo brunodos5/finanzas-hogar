@@ -5,4 +5,3 @@ node_modules/
 # Local Netlify folder
 .netlify
 .deploy-clean/
-public/

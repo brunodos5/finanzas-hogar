@@ -5,6 +5,7 @@ App estatica para registrar movimientos del hogar con conceptos propios, carga d
 ## Archivos
 
 - `index.html`: app completa.
+- `vite.config.js`: configuracion de Vite y PWA.
 - `netlify.toml`: configuracion para publicar en Netlify.
 - `supabase/schema.sql`: tabla y politicas RLS para sincronizar datos por usuario.
 
@@ -22,7 +23,14 @@ App estatica para registrar movimientos del hogar con conceptos propios, carga d
 
 ## Netlify
 
-Publicar como sitio estatico. El directorio de publicacion es la raiz del proyecto.
+Publicar como sitio Vite estatico.
+
+- Build command: `npm run build`
+- Publish directory: `dist`
+
+## PWA
+
+La app es instalable en Android desde Chrome. `vite-plugin-pwa` genera el manifest y el service worker durante el build. Los iconos fuente estan en `public/icons/`.
 
 Para usar IA con OpenAI en Netlify:
 
