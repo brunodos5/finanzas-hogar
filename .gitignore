@@ -1,1 +1,8 @@
 finanzas-hogar-proyecto.zip
+node_modules/
+.npm-cache/
+
+# Local Netlify folder
+.netlify
+.deploy-clean/
+public/

@@ -266,6 +266,7 @@
             </div>
             <div class="actions" style="margin-top:12px;">
               <button class="btn" onclick="saveCloudConfig()">Guardar config</button>
+              <button class="btn primary" onclick="loginWithGitHub()">Entrar con GitHub</button>
               <button class="btn primary" onclick="sendLoginLink()">Enviar link de acceso</button>
               <button class="btn" onclick="signOutCloud()">Salir</button>
             </div>
@@ -412,8 +413,14 @@
 <script>
 const STORAGE_KEY = 'finanzas_hogar_conceptos_v1';
 const CLOUD_CONFIG_KEY = 'finanzas_hogar_supabase_config_v1';
+const DEFAULT_CLOUD_CONFIG = {
+  url: 'https://mnkkearluehndvkudulc.supabase.co',
+  anonKey: 'sb_publishable_ELCFM1JVaSE2tU9M0vs45g_hQZnPAOJ'
+};
 let supabaseClient = null;
 let cloudSession = null;
+let cloudAuthListenerReady = false;
+let cloudClientKey = '';
 
 const CONCEPTOS = [
   { nombre: 'Sueldo caminito', tipo: 'ingreso', categoria: 'Sueldo Aless' },
@@ -1231,7 +1238,7 @@ function exportExcel() {
   XLSX.writeFile(wb, `finanzas_hogar_${today()}.xlsx`);
 }
 function getCloudConfig() {
-  try { return JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY) || '{}'); } catch { return {}; }
+  try { return { ...DEFAULT_CLOUD_CONFIG, ...JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY) || '{}') }; } catch { return DEFAULT_CLOUD_CONFIG; }
 }
 function setCloudText(id, msg) {
   const el = document.getElementById(id);
@@ -1244,7 +1251,25 @@ async function initSupabase() {
     cloudSession = null;
     return false;
   }
-  supabaseClient = supabase.createClient(config.url, config.anonKey);
+  const nextClientKey = `${config.url}|${config.anonKey}`;
+  if (!supabaseClient || cloudClientKey !== nextClientKey) {
+    cloudClientKey = nextClientKey;
+    cloudAuthListenerReady = false;
+    supabaseClient = supabase.createClient(config.url, config.anonKey, {
+      auth: {
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true
+      }
+    });
+    if (!cloudAuthListenerReady) {
+      cloudAuthListenerReady = true;
+      supabaseClient.auth.onAuthStateChange((_event, session) => {
+        cloudSession = session;
+        if (document.getElementById('page-nube')?.classList.contains('active')) renderCloud();
+      });
+    }
+  }
   const { data } = await supabaseClient.auth.getSession();
   cloudSession = data.session;
   return true;
@@ -1279,6 +1304,16 @@ async function sendLoginLink() {
   });
   if (error) return setCloudText('cloud-status', 'Error: ' + error.message);
   setCloudText('cloud-status', 'Listo. Revisá tu email y abrí el link de acceso.');
+}
+async function loginWithGitHub() {
+  await saveCloudConfig();
+  if (!supabaseClient) return;
+  setCloudText('cloud-status', 'Abriendo GitHub...');
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'github',
+    options: { redirectTo: window.location.href.split('#')[0] }
+  });
+  if (error) setCloudText('cloud-status', 'Error con GitHub: ' + error.message);
 }
 async function signOutCloud() {
   if (!supabaseClient) await initSupabase();
