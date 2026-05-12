@@ -7,8 +7,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest: {
-        name: 'Gastos VIU',
-        short_name: 'Gastos VIU',
+        name: 'Finanzas Casa',
+        short_name: 'Finanzas Casa',
         display: 'standalone',
         start_url: '/',
         scope: '/',
