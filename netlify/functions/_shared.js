@@ -1,5 +1,5 @@
 const OPENAI_URL = 'https://api.openai.com/v1/responses';
-const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-5.2';
 
 function json(statusCode, body) {
   return {
