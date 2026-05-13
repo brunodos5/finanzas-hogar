@@ -1,4 +1,4 @@
-const { json, callOpenAI, conceptsSummary } = require('./_shared');
+const { json, callOpenAI, conceptsSummary, learningRulesSummary } = require('./_shared');
 
 const schema = {
   type: 'object',
@@ -21,7 +21,7 @@ exports.handler = async event => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
 
   try {
-    const { file, concepts, today } = JSON.parse(event.body || '{}');
+    const { file, concepts, learningRules, today } = JSON.parse(event.body || '{}');
     if (!file?.data || !file?.type) return json(400, { error: 'Missing file data' });
 
     const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
@@ -34,6 +34,8 @@ exports.handler = async event => {
       'Devolvé solamente datos del gasto principal. No inventes datos si no están claros.',
       `Si no ves fecha, usá ${today}. La fecha debe ser YYYY-MM-DD.`,
       'El monto debe ser el total final pagado, número positivo, sin símbolo de moneda.',
+      'Priorizá estas correcciones aprendidas del usuario cuando el comercio o texto coincida:',
+      learningRulesSummary((learningRules || []).filter(r => r.tipo === 'gasto')) || 'Sin correcciones aprendidas todavia.',
       'Elegí el concepto y categoría más cercanos de esta lista:',
       conceptsSummary((concepts || []).filter(c => c.tipo === 'gasto'))
     ].join('\n\n');

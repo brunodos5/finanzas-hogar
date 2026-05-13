@@ -566,7 +566,7 @@ const ALL_CATEGORIAS = [];
 const COLORS = ['#25734b', '#235b9f', '#b23636', '#916400', '#7057a6', '#0f766e', '#c05220', '#557a2a', '#9d3560', '#64748b', '#7c4a03', '#0e7490'];
 const ICONS = { efectivo: '$', banco: 'B', tarjeta: 'T', ahorro: 'A', otro: 'O' };
 
-let state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [] };
+let state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], aiRules: [] };
 let currentTipo = 'gasto';
 let editingCuentaId = null;
 let editingMovimientoId = null;
@@ -576,6 +576,7 @@ let chartGroup = null;
 let chartIncomeCat = null;
 let chartMonths = null;
 let bankImportRows = [];
+let lastReceiptSuggestion = null;
 
 function unique(values) {
   return [...new Set(values.map(v => String(v || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
@@ -1078,6 +1079,7 @@ function openComprobante() {
   openModal('modal-comprobante');
 }
 function resetReceipt() {
+  lastReceiptSuggestion = null;
   document.getElementById('receipt-file').value = '';
   document.getElementById('receipt-status').classList.add('hidden');
   document.getElementById('receipt-form').classList.add('hidden');
@@ -1402,7 +1404,8 @@ function normalizeFinanceState(data) {
     cuentas: Array.isArray(data?.cuentas) ? data.cuentas : [],
     movimientos: Array.isArray(data?.movimientos) ? data.movimientos : [],
     presupuestos: Array.isArray(data?.presupuestos) ? data.presupuestos : [],
-    deletedMovimientos: Array.isArray(data?.deletedMovimientos) ? data.deletedMovimientos : []
+    deletedMovimientos: Array.isArray(data?.deletedMovimientos) ? data.deletedMovimientos : [],
+    aiRules: Array.isArray(data?.aiRules) ? data.aiRules : []
   };
 }
 function mergeByIdOrKey(target, source, getKey, idMap) {
@@ -1448,6 +1451,7 @@ function mergeFinanceStates(localData, cloudData) {
     cuentas: local.cuentas.map(c => ({ ...c })),
     movimientos: [],
     presupuestos: local.presupuestos.map(p => ({ ...p })),
+    aiRules: local.aiRules.map(r => ({ ...r })),
     deletedMovimientos: [...new Set([...local.deletedMovimientos, ...cloud.deletedMovimientos])]
   };
   const accountKey = c => `${normalizeKey(c.tipo)}|${normalizeKey(c.nombre)}`;
@@ -1608,7 +1612,7 @@ async function downloadFromCloud() {
   const { data, error } = await supabaseClient.from('finance_states').select('data, updated_at').eq('user_id', cloudSession.user.id).single();
   if (error) return setCloudText('sync-status', 'No encontré datos en Supabase para este usuario.');
   if (!confirm('Esto reemplaza los datos locales con lo guardado en Supabase. ¿Continuar?')) return;
-  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], ...(data.data || {}) };
+  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], aiRules: [], ...(data.data || {}) };
   save();
   refreshAll();
   setCloudText('sync-status', `Datos descargados. Última nube: ${new Date(data.updated_at).toLocaleString('es-UY')}`);
@@ -1635,6 +1639,7 @@ function ensureStateShape() {
   if (!Array.isArray(state.deletedMovimientos)) state.deletedMovimientos = [];
   if (!Array.isArray(state.deletedCuentas)) state.deletedCuentas = [];
   if (!Array.isArray(state.categories)) state.categories = [];
+  if (!Array.isArray(state.aiRules)) state.aiRules = [];
 }
 function getCategories(tipo) {
   ensureStateShape();
@@ -1650,11 +1655,53 @@ function categoryGroup(categoria) {
 }
 function allCategories() { return unique(state.movimientos.map(m => m.categoria).concat(categoryNames()).filter(Boolean)); }
 function defaultCategory(tipo) { return categoryNames(tipo)[0] || 'Sin categoria'; }
+function aiRuleKey(text) {
+  const stop = new Set(['compra', 'pago', 'debito', 'credito', 'tarjeta', 'visa', 'master', 'pos', 'total', 'factura', 'comprobante']);
+  const words = normalizeText(text)
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !/^\d+$/.test(w) && !stop.has(w));
+  return words.slice(0, 7).join(' ');
+}
+function learnedCategoryForDescription(desc, tipo) {
+  ensureStateShape();
+  const key = aiRuleKey(desc);
+  if (!key) return '';
+  const cats = categoryNames(tipo);
+  const words = key.split(' ');
+  const match = state.aiRules
+    .filter(r => r.tipo === tipo && cats.includes(r.categoria))
+    .sort((a, b) => (b.count || 0) - (a.count || 0) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+    .find(r => r.key && (key.includes(r.key) || r.key.includes(key) || r.key.split(' ').every(w => words.includes(w))));
+  return match ? match.categoria : '';
+}
+function learnCategoryRule(desc, tipo, categoria, source = 'manual') {
+  ensureStateShape();
+  const key = aiRuleKey(desc);
+  if (!key || !categoryNames(tipo).includes(categoria)) return;
+  const now = new Date().toISOString();
+  const existing = state.aiRules.find(r => r.tipo === tipo && r.key === key);
+  if (existing) Object.assign(existing, { categoria, source, count: (existing.count || 0) + 1, updatedAt: now });
+  else state.aiRules.push({ id: uid(), tipo, key, categoria, source, count: 1, updatedAt: now });
+  state.aiRules = state.aiRules
+    .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+    .slice(0, 250);
+}
+function aiTrainingExamples(tipo) {
+  ensureStateShape();
+  return state.aiRules
+    .filter(r => (!tipo || r.tipo === tipo) && categoryNames(r.tipo).includes(r.categoria))
+    .sort((a, b) => (b.count || 0) - (a.count || 0) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+    .slice(0, 80)
+    .map(r => ({ texto: r.key, tipo: r.tipo, categoria: r.categoria }));
+}
 function categoryForDescription(desc, tipo) {
   const norm = normalizeText(desc);
   const cats = categoryNames(tipo);
   const exact = cats.find(cat => norm.includes(normalizeText(cat)));
   if (exact) return exact;
+  const learned = learnedCategoryForDescription(desc, tipo);
+  if (learned) return learned;
   const rules = [
     ['sueldo|salario|haberes|retiro|ingreso', 'Sueldo'],
     ['super|mercado|devoto|disco|tienda inglesa|ta-ta|tata|almacen|feria|verduleria|carniceria|pedido|restaurante|bar|comida', 'Alimentos'],
@@ -1764,6 +1811,7 @@ function guardarMovimiento() {
     const idx = state.movimientos.findIndex(m => m.id === editingMovimientoId);
     if (idx >= 0) state.movimientos[idx] = mov;
   } else state.movimientos.push(mov);
+  if (currentTipo !== 'transferencia') learnCategoryRule(desc, currentTipo, categoria, editingMovimientoId ? 'movement_edit' : 'movement');
   save();
   closeModal('modal-mov');
   refreshAll();
@@ -1774,6 +1822,7 @@ function addMovimiento({ tipo, concepto, categoria, desc, monto, fecha, cuentaId
   const mov = { id: uid(), tipo, concepto: finalCategoria, categoria: finalCategoria, desc: desc || finalCategoria, monto: Math.abs(Number(monto) || 0), fecha, cuentaId, notas: notas || '' };
   if (cuentaDestId) mov.cuentaDestId = cuentaDestId;
   state.movimientos.push(mov);
+  if (tipo !== 'transferencia') learnCategoryRule(mov.desc, tipo, finalCategoria, 'movement');
 }
 function editarMovimiento(id) {
   const mov = state.movimientos.find(m => m.id === id);
@@ -1976,6 +2025,7 @@ function openComprobante() {
 function applyReceiptResult(result) {
   if (!result || result.is_receipt === false) throw new Error('No parece ser un comprobante');
   const categoria = categoryNames('gasto').includes(result.categoria) ? result.categoria : categoryForDescription(`${result.desc || ''} ${result.concepto || ''}`, 'gasto');
+  lastReceiptSuggestion = { desc: result.desc || result.concepto || '', categoria };
   document.getElementById('r-categoria').value = categoria;
   document.getElementById('r-desc').value = result.desc || result.concepto || categoria;
   document.getElementById('r-monto').value = result.monto ? Math.abs(Number(result.monto)).toFixed(2) : '';
@@ -1993,6 +2043,7 @@ async function handleReceiptFile(event) {
     const aiResult = await postJSON('/.netlify/functions/analyze-receipt', {
       file: { name: file.name, type: file.type || 'image/jpeg', data: await fileToBase64(file) },
       concepts: aiConcepts,
+      learningRules: aiTrainingExamples('gasto'),
       today: today()
     });
     applyReceiptResult(aiResult);
@@ -2015,6 +2066,7 @@ async function handleReceiptFile(event) {
     const lines = text.split(/\n+/).map(s => s.trim()).filter(s => s.length > 3);
     const desc = lines.find(l => !parseDateValue(l) && parseMoney(l) === null) || file.name.replace(/\.[^.]+$/, '');
     const categoria = categoryForDescription(desc + ' ' + text, 'gasto');
+    lastReceiptSuggestion = { desc, categoria };
     document.getElementById('r-categoria').value = categoria;
     document.getElementById('r-desc').value = desc.slice(0, 80);
     document.getElementById('r-monto').value = amount ? amount.toFixed(2) : '';
@@ -2032,10 +2084,12 @@ function guardarComprobante() {
   const cuentaId = document.getElementById('r-cuenta').value;
   const categoria = document.getElementById('r-categoria').value;
   if (!monto || !cuentaId || !categoria) return toast('Completa categoria, monto y cuenta.');
+  const desc = document.getElementById('r-desc').value.trim() || categoria;
+  learnCategoryRule(`${desc} ${lastReceiptSuggestion?.desc || ''}`, 'gasto', categoria, 'receipt');
   addMovimiento({
     tipo: 'gasto',
     categoria,
-    desc: document.getElementById('r-desc').value.trim() || categoria,
+    desc,
     monto,
     fecha: document.getElementById('r-fecha').value || today(),
     cuentaId,
@@ -2113,6 +2167,7 @@ async function handleBankFile(event) {
         fileName: file.name,
         text: rawText,
         concepts: getCategories().map(c => ({ nombre: c.nombre, tipo: c.tipo, categoria: c.nombre })),
+        learningRules: aiTrainingExamples(),
         defaultType: document.getElementById('bank-default-type').value
       });
       bankImportRows = (aiResult.movimientos || []).map(m => {
@@ -2356,7 +2411,8 @@ function normalizeFinanceState(data) {
     presupuestos: Array.isArray(data?.presupuestos) ? data.presupuestos : [],
     deletedMovimientos: Array.isArray(data?.deletedMovimientos) ? data.deletedMovimientos : [],
     deletedCuentas: Array.isArray(data?.deletedCuentas) ? data.deletedCuentas : [],
-    categories: Array.isArray(data?.categories) ? data.categories : []
+    categories: Array.isArray(data?.categories) ? data.categories : [],
+    aiRules: Array.isArray(data?.aiRules) ? data.aiRules : []
   };
 }
 function mergeFinanceStates(localData, cloudData) {
@@ -2368,6 +2424,7 @@ function mergeFinanceStates(localData, cloudData) {
     movimientos: [],
     presupuestos: local.presupuestos.map(p => ({ ...p })),
     categories: local.categories.map(c => ({ ...c })),
+    aiRules: local.aiRules.map(r => ({ ...r })),
     deletedMovimientos: [...new Set([...local.deletedMovimientos, ...cloud.deletedMovimientos])],
     deletedCuentas: [...new Set([...local.deletedCuentas, ...cloud.deletedCuentas])]
   };
@@ -2384,6 +2441,7 @@ function mergeFinanceStates(localData, cloudData) {
   cloud.movimientos.forEach(addMergedMovimiento);
   const budgetKey = p => p.key || `${p.mes}_${p.categoria}`;
   mergeByIdOrKey(merged.presupuestos, cloud.presupuestos.map(p => ({ ...p, key: budgetKey(p) })), budgetKey);
+  mergeByIdOrKey(merged.aiRules, cloud.aiRules, r => `${normalizeKey(r.tipo)}|${normalizeKey(r.key)}`);
   return merged;
 }
 async function downloadFromCloud() {
@@ -2392,7 +2450,7 @@ async function downloadFromCloud() {
   const { data, error } = await supabaseClient.from('finance_states').select('data, updated_at').eq('user_id', cloudSession.user.id).single();
   if (error) return setCloudText('sync-status', 'No encontre datos en Supabase para este usuario.');
   if (!confirm('Esto reemplaza los datos locales con lo guardado en Supabase. Continuar?')) return;
-  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], deletedCuentas: [], categories: [], ...(data.data || {}) };
+  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], deletedCuentas: [], categories: [], aiRules: [], ...(data.data || {}) };
   ensureStateShape();
   save();
   refreshAll();

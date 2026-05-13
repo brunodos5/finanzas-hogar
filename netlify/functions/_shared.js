@@ -62,6 +62,14 @@ function conceptsSummary(concepts) {
     .slice(0, 12000);
 }
 
+function learningRulesSummary(rules) {
+  return (rules || [])
+    .map(r => `${r.tipo}: "${r.texto}" => ${r.categoria}`)
+    .join('\n')
+    .slice(0, 8000);
+}
+
 exports.json = json;
 exports.callOpenAI = callOpenAI;
 exports.conceptsSummary = conceptsSummary;
+exports.learningRulesSummary = learningRulesSummary;

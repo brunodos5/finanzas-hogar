@@ -1,4 +1,4 @@
-const { json, callOpenAI, conceptsSummary } = require('./_shared');
+const { json, callOpenAI, conceptsSummary, learningRulesSummary } = require('./_shared');
 
 const schema = {
   type: 'object',
@@ -30,7 +30,7 @@ exports.handler = async event => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
 
   try {
-    const { text, fileName, concepts, defaultType } = JSON.parse(event.body || '{}');
+    const { text, fileName, concepts, learningRules, defaultType } = JSON.parse(event.body || '{}');
     if (!text || text.length < 10) return json(400, { error: 'Missing statement text' });
 
     const prompt = [
@@ -39,6 +39,8 @@ exports.handler = async event => {
       'Cada movimiento debe tener fecha YYYY-MM-DD, descripción, monto positivo y tipo ingreso/gasto.',
       `Si el signo o columna no es clara, usá tipo por defecto: ${defaultType || 'gasto'}.`,
       'Débitos, compras, pagos, retiros y cargos son gasto. Créditos, depósitos, transferencias recibidas y sueldo son ingreso.',
+      'Priorizá estas correcciones aprendidas del usuario cuando el comercio o texto coincida:',
+      learningRulesSummary(learningRules || []) || 'Sin correcciones aprendidas todavia.',
       'Elegí el concepto y categoría más cercanos de esta lista:',
       conceptsSummary(concepts || []),
       `Archivo: ${fileName || 'estado de cuenta'}`,
