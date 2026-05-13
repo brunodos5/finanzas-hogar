@@ -154,6 +154,8 @@
   .category-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; border-top: 1px solid var(--border); padding: 10px 0; }
   .check-row { display: flex; align-items: center; gap: 8px; padding-top: 4px; }
   .check-row input { width: auto; }
+  .row-check { width: 34px; text-align: center; }
+  .row-check input { width: auto; }
   .recurring-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
   .recurring-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: color-mix(in srgb, var(--surface2) 35%, transparent); }
   .recurring-item strong { display: block; margin-bottom: 4px; }
@@ -299,12 +301,13 @@
           <select id="filter-account" onchange="renderMovimientos()"></select>
           <select id="filter-cat" onchange="renderMovimientos()"></select>
           <select id="filter-month" onchange="renderMovimientos()"></select>
+          <button class="btn danger hidden" id="bulk-delete-mov" onclick="eliminarMovimientosSeleccionados()">Eliminar seleccionados</button>
           <button class="btn" onclick="exportCSV()">↓ CSV</button>
           <button class="btn" onclick="exportCurrentViewExcel()">Excel</button>
           <button class="btn primary" onclick="openMovimiento()">+ Nuevo</button>
         </div>
       </div>
-      <div class="card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Descripción</th><th>Grupo</th><th>Categoría</th><th>Cuenta</th><th>Tipo</th><th class="right">Monto</th><th></th></tr></thead><tbody id="mov-body"></tbody></table></div></div>
+      <div class="card"><div class="table-wrap"><table><thead><tr><th class="row-check"><input id="mov-select-all" type="checkbox" onchange="toggleAllMovimientoSelection(this.checked)"></th><th>Fecha</th><th>Descripción</th><th>Grupo</th><th>Categoría</th><th>Cuenta</th><th>Tipo</th><th class="right">Monto</th><th></th></tr></thead><tbody id="mov-body"></tbody></table></div></div>
     </section>
 
     <section class="page" id="page-cuentas">
@@ -586,6 +589,7 @@ let chartIncomeCat = null;
 let chartMonths = null;
 let bankImportRows = [];
 let lastReceiptSuggestion = null;
+let selectedMovimientoIds = new Set();
 
 function unique(values) {
   return [...new Set(values.map(v => String(v || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
@@ -743,10 +747,58 @@ function eliminarMovimiento(id) {
   if (!confirm('Eliminar este movimiento?')) return;
   if (!Array.isArray(state.deletedMovimientos)) state.deletedMovimientos = [];
   if (!state.deletedMovimientos.includes(id)) state.deletedMovimientos.push(id);
+  selectedMovimientoIds.delete(id);
   state.movimientos = state.movimientos.filter(m => m.id !== id);
   save();
   refreshAll();
   toast('Movimiento eliminado');
+}
+function visibleMovimientoIds() {
+  return getFilteredMovimientos().map(m => m.id).filter(Boolean);
+}
+function toggleMovimientoSelection(id, checked) {
+  if (checked) selectedMovimientoIds.add(id);
+  else selectedMovimientoIds.delete(id);
+  updateBulkDeleteUI();
+}
+function toggleAllMovimientoSelection(checked) {
+  visibleMovimientoIds().forEach(id => {
+    if (checked) selectedMovimientoIds.add(id);
+    else selectedMovimientoIds.delete(id);
+  });
+  renderMovimientos();
+}
+function clearMovimientoSelection() {
+  selectedMovimientoIds.clear();
+  renderMovimientos();
+}
+function updateBulkDeleteUI() {
+  const visibleIds = visibleMovimientoIds();
+  const selectedVisible = visibleIds.filter(id => selectedMovimientoIds.has(id));
+  const btn = document.getElementById('bulk-delete-mov');
+  if (btn) {
+    btn.classList.toggle('hidden', !selectedVisible.length);
+    btn.textContent = selectedVisible.length ? `Eliminar ${selectedVisible.length} seleccionados` : 'Eliminar seleccionados';
+  }
+  const all = document.getElementById('mov-select-all');
+  if (all) {
+    all.checked = Boolean(visibleIds.length && selectedVisible.length === visibleIds.length);
+    all.indeterminate = Boolean(selectedVisible.length && selectedVisible.length < visibleIds.length);
+  }
+}
+function eliminarMovimientosSeleccionados() {
+  const ids = visibleMovimientoIds().filter(id => selectedMovimientoIds.has(id));
+  if (!ids.length) return toast('Selecciona movimientos para eliminar.');
+  if (!confirm(`Eliminar ${ids.length} movimiento${ids.length === 1 ? '' : 's'} seleccionado${ids.length === 1 ? '' : 's'}?`)) return;
+  if (!Array.isArray(state.deletedMovimientos)) state.deletedMovimientos = [];
+  ids.forEach(id => {
+    if (!state.deletedMovimientos.includes(id)) state.deletedMovimientos.push(id);
+    selectedMovimientoIds.delete(id);
+  });
+  state.movimientos = state.movimientos.filter(m => !ids.includes(m.id));
+  save();
+  refreshAll();
+  toast(`${ids.length} movimiento${ids.length === 1 ? '' : 's'} eliminado${ids.length === 1 ? '' : 's'}`);
 }
 function editarMovimiento(id) {
   const mov = state.movimientos.find(m => m.id === id);
@@ -1942,7 +1994,8 @@ function renderRecurrentesPage() {
 }
 function renderRows(tbody, movs, withActions = true) {
   if (!movs.length) {
-    tbody.innerHTML = `<tr><td colspan="${withActions ? 8 : 5}"><div class="empty">Sin movimientos todavia.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${withActions ? 9 : 5}"><div class="empty">Sin movimientos todavia.</div></td></tr>`;
+    if (withActions) updateBulkDeleteUI();
     return;
   }
   tbody.innerHTML = movs.map(m => {
@@ -1952,6 +2005,7 @@ function renderRows(tbody, movs, withActions = true) {
     const desc = m.desc || m.categoria || '';
     if (!withActions) return `<tr><td>${dateFmt(m.fecha)}</td><td>${desc}</td><td><span class="badge gray">${m.categoria || '-'}</span></td><td>${cuenta ? cuenta.nombre : '-'}</td><td class="right ${cls}"><strong>${sign} ${money(m.monto)}</strong></td></tr>`;
     return `<tr>
+      <td class="row-check"><input type="checkbox" ${selectedMovimientoIds.has(m.id) ? 'checked' : ''} onchange="toggleMovimientoSelection('${m.id}', this.checked)"></td>
       <td>${dateFmt(m.fecha)}</td>
       <td>${desc}${m.notas ? `<br><small class="muted">${m.notas}</small>` : ''}</td>
       <td><span class="badge gray">${categoryGroup(m.categoria)}</span></td>
@@ -1962,6 +2016,7 @@ function renderRows(tbody, movs, withActions = true) {
       <td class="right"><button class="btn sm" onclick="editarMovimiento('${m.id}')">Editar</button> <button class="btn sm danger" onclick="eliminarMovimiento('${m.id}')">Eliminar</button></td>
     </tr>`;
   }).join('');
+  if (withActions) updateBulkDeleteUI();
 }
 function openCategoria(id) {
   const cat = id ? state.categories.find(c => c.id === id) : null;
