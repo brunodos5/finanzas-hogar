@@ -139,6 +139,11 @@
   .toast { position: fixed; right: 22px; bottom: 22px; background: var(--text); color: var(--bg); border-radius: 6px; padding: 10px 14px; transform: translateY(40px); opacity: 0; transition: .2s; z-index: 30; }
   .toast.show { transform: translateY(0); opacity: 1; }
   .hidden { display: none !important; }
+  .auth-screen { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  .auth-card { width: min(430px, 100%); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; display: grid; gap: 14px; }
+  .auth-card h1 { font: 700 26px/1.1 Georgia, serif; }
+  .category-list { display: grid; gap: 8px; }
+  .category-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; border-top: 1px solid var(--border); padding: 10px 0; }
   @media (max-width: 900px) {
     .shell { grid-template-columns: 1fr; }
     .sidebar { position: sticky; top: 0; z-index: 10; border-right: 0; border-bottom: 1px solid var(--border); }
@@ -155,18 +160,34 @@
 </style>
 </head>
 <body>
-<div class="shell">
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-card">
+    <div>
+      <h1>Finanzas Casa</h1>
+      <p class="muted">Ingresa para sincronizar tus datos y usar la app desde cualquier equipo.</p>
+    </div>
+    <label>Email<input id="auth-email" type="email" placeholder="tu@email.com"></label>
+    <div class="actions">
+      <button class="btn primary" onclick="sendAuthLoginLink()">Enviar link de acceso</button>
+      <button class="btn" onclick="loginWithGitHub()">GitHub</button>
+    </div>
+    <div class="status-box" id="auth-status">Te enviamos un link magico para entrar sin contrasena.</div>
+  </div>
+</div>
+
+<div class="shell hidden" id="app-shell">
   <aside class="sidebar">
     <div class="brand">
       <h1>◆ Finanzas</h1>
-      <p>Hogar · conceptos propios</p>
+      <p>Hogar · categorias propias</p>
     </div>
     <div class="nav">
       <div class="nav-label">Principal</div>
-      <button class="active" data-page-btn="dashboard" onclick="showPage('dashboard')">▦ Dashboard</button>
+      <button class="active" data-page-btn="dashboard" onclick="showPage('dashboard')">▦ Inicio</button>
       <button data-page-btn="movimientos" onclick="showPage('movimientos')">≡ Movimientos</button>
       <button data-page-btn="cuentas" onclick="showPage('cuentas')">▣ Cuentas</button>
       <button data-page-btn="presupuesto" onclick="showPage('presupuesto')">▥ Presupuesto</button>
+      <button data-page-btn="categorias" onclick="showPage('categorias')">Categorias</button>
       <button data-page-btn="nube" onclick="showPage('nube')">Nube</button>
       <div class="nav-label">Cargar</div>
       <button onclick="openComprobante()">Camara / comprobante</button>
@@ -183,8 +204,8 @@
     <section class="page active" id="page-dashboard">
       <div class="page-head">
         <div>
-          <h2>Dashboard</h2>
-          <p class="muted">Resumen de ingresos, gastos y conceptos.</p>
+          <h2>Inicio</h2>
+          <p class="muted">Resumen de ingresos, gastos y categorias.</p>
         </div>
         <div class="actions">
           <select id="dash-month" onchange="renderDashboard()"></select>
@@ -204,10 +225,14 @@
           <div class="card-head"><span class="card-title">Ingresos vs gastos</span></div>
           <div class="card-body"><div class="chart-box"><canvas id="chart-months"></canvas></div></div>
         </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Ingresos por categoria</span></div>
+          <div class="card-body"><div class="chart-box"><canvas id="chart-income-cat"></canvas></div></div>
+        </div>
       </div>
       <div class="card">
         <div class="card-head"><span class="card-title">Últimos movimientos</span></div>
-        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Cuenta</th><th class="right">Monto</th></tr></thead><tbody id="recent-body"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoría</th><th>Cuenta</th><th class="right">Monto</th></tr></thead><tbody id="recent-body"></tbody></table></div>
       </div>
     </section>
 
@@ -215,7 +240,7 @@
       <div class="page-head">
         <div>
           <h2>Movimientos</h2>
-          <p class="muted">Registro completo con tus conceptos del Excel.</p>
+          <p class="muted">Registro completo con tus categorias.</p>
         </div>
         <div class="actions">
           <select id="filter-type" onchange="renderMovimientos()"><option value="">Todos</option><option value="ingreso">Ingresos</option><option value="gasto">Gastos</option><option value="transferencia">Transferencias</option></select>
@@ -226,7 +251,7 @@
           <button class="btn primary" onclick="openMovimiento()">+ Nuevo</button>
         </div>
       </div>
-      <div class="card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Descripción</th><th>Categoría</th><th>Cuenta</th><th>Tipo</th><th class="right">Monto</th><th></th></tr></thead><tbody id="mov-body"></tbody></table></div></div>
+      <div class="card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cuenta</th><th>Tipo</th><th class="right">Monto</th><th></th></tr></thead><tbody id="mov-body"></tbody></table></div></div>
     </section>
 
     <section class="page" id="page-cuentas">
@@ -252,6 +277,26 @@
         </div>
       </div>
       <div id="budget-content"></div>
+    </section>
+
+    <section class="page" id="page-categorias">
+      <div class="page-head">
+        <div>
+          <h2>Categorias</h2>
+          <p class="muted">Crea, edita o elimina las categorias que usas para ingresos y gastos.</p>
+        </div>
+        <button class="btn primary" onclick="openCategoria()">+ Nueva categoria</button>
+      </div>
+      <div class="grid two-col">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Ingresos</span></div>
+          <div class="card-body"><div class="category-list" id="cat-ingreso"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Gastos</span></div>
+          <div class="card-body"><div class="category-list" id="cat-gasto"></div></div>
+        </div>
+      </div>
     </section>
 
     <section class="page" id="page-nube">
@@ -308,7 +353,6 @@
         <button data-type="transferencia" onclick="setTipo('transferencia')">⇄ Transferencia</button>
       </div>
       <div class="form-grid">
-        <label>Concepto<select id="m-concepto" onchange="onConceptoChange()"></select></label>
         <label>Categoría<select id="m-categoria"></select></label>
         <label>Descripción<input id="m-desc" placeholder="Detalle opcional"></label>
         <label>Monto<input id="m-monto" type="number" step="0.01" placeholder="0.00"></label>
@@ -361,6 +405,23 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="modal-categoria">
+  <div class="modal">
+    <div class="modal-head"><strong id="categoria-title">Nueva categoria</strong><button class="btn sm" onclick="closeModal('modal-categoria')">Cerrar</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <label>Nombre<input id="cat-nombre" placeholder="Ej: Sueldo, Supermercado"></label>
+        <label>Tipo<select id="cat-tipo"><option value="ingreso">Ingreso</option><option value="gasto">Gasto</option></select></label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger hidden" id="categoria-delete" onclick="eliminarCategoria()">Eliminar</button>
+      <button class="btn" onclick="closeModal('modal-categoria')">Cancelar</button>
+      <button class="btn primary" onclick="guardarCategoria()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modal-comprobante">
   <div class="modal wide">
     <div class="modal-head"><strong>Cargar comprobante</strong><button class="btn sm" onclick="closeModal('modal-comprobante')">Cerrar</button></div>
@@ -372,7 +433,6 @@
       </label>
       <div class="status-box hidden" id="receipt-status"></div>
       <div class="form-grid hidden" id="receipt-form" style="margin-top:14px;">
-        <label>Concepto<select id="r-concepto" onchange="onReceiptConceptoChange()"></select></label>
         <label>Categoria<select id="r-categoria"></select></label>
         <label>Descripcion<input id="r-desc"></label>
         <label>Monto<input id="r-monto" type="number" step="0.01"></label>
@@ -404,7 +464,7 @@
       <div class="status-box hidden" id="bank-status"></div>
       <div class="preview-list hidden" id="bank-preview">
         <table>
-          <thead><tr><th>Fecha</th><th>Concepto</th><th>Descripcion</th><th>Categoria</th><th>Tipo</th><th class="right">Monto</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoria</th><th>Tipo</th><th class="right">Monto</th></tr></thead>
           <tbody id="bank-preview-body"></tbody>
         </table>
       </div>
@@ -433,100 +493,10 @@ let cloudSyncTimer = null;
 let cloudSyncing = false;
 let applyingCloudState = false;
 
-const CONCEPTOS = [
-  { nombre: 'Sueldo caminito', tipo: 'ingreso', categoria: 'Sueldo Aless' },
-  { nombre: 'Aguinaldo', tipo: 'ingreso', categoria: 'Sueldo Aless' },
-  { nombre: 'Licencia', tipo: 'ingreso', categoria: 'Sueldo Aless' },
-  { nombre: 'Sueldo Aless Seguro', tipo: 'ingreso', categoria: 'Sueldo Aless' },
-  { nombre: 'Retiro Bruno', tipo: 'ingreso', categoria: 'Retiros Bruno' },
-  { nombre: 'Retiro Bruno Alquiler', tipo: 'ingreso', categoria: 'Retiros Bruno' },
-  { nombre: 'Ingresos Tomillo Aless', tipo: 'ingreso', categoria: 'Sueldo Aless' },
-  { nombre: 'Regalos Mateo', tipo: 'ingreso', categoria: 'Regalos Mateo' },
-  { nombre: 'Pagos Deudas', tipo: 'ingreso', categoria: 'Pagos Deudas' },
-  { nombre: 'Surtido Super', tipo: 'gasto', categoria: 'Alimentos y Limpieza' },
-  { nombre: 'Antel wifi', tipo: 'gasto', categoria: 'Gastos fijos' },
-  { nombre: 'Celular Bruno', tipo: 'gasto', categoria: 'Gastos fijos' },
-  { nombre: 'Celular Aless', tipo: 'gasto', categoria: 'Gastos fijos' },
-  { nombre: 'UTE', tipo: 'gasto', categoria: 'Gastos fijos' },
-  { nombre: 'Gastos Comunes casa', tipo: 'gasto', categoria: 'Alquiler y gastos de la casa' },
-  { nombre: 'Bidón de Agua', tipo: 'gasto', categoria: 'Alimentos y Limpieza' },
-  { nombre: 'Comida Boris', tipo: 'gasto', categoria: 'Boris' },
-  { nombre: 'Piedras Boris', tipo: 'gasto', categoria: 'Boris' },
-  { nombre: 'Garantia Alquiler', tipo: 'gasto', categoria: 'Alquiler y gastos de la casa' },
-  { nombre: 'Gimnasio Aless', tipo: 'gasto', categoria: 'Gastos Varios Aless' },
-  { nombre: 'Spotify', tipo: 'gasto', categoria: 'Oseo' },
-  { nombre: 'Disney Plus', tipo: 'gasto', categoria: 'Oseo' },
-  { nombre: 'Alquiler', tipo: 'gasto', categoria: 'Alquiler y gastos de la casa' },
-  { nombre: 'IMM', tipo: 'gasto', categoria: 'Gastos fijos' },
-  { nombre: 'Gas', tipo: 'gasto', categoria: 'Gastos fijos' },
-  { nombre: 'Laika', tipo: 'gasto', categoria: 'Boris' },
-  { nombre: 'Emergencia UNO', tipo: 'gasto', categoria: 'Salud y gastos médicos' },
-  { nombre: 'Fisioterapia', tipo: 'gasto', categoria: 'Salud y gastos médicos' },
-  { nombre: 'Carniceria', tipo: 'gasto', categoria: 'Alimentos y Limpieza' },
-  { nombre: 'Feria o verduleria', tipo: 'gasto', categoria: 'Alimentos y Limpieza' },
-  { nombre: 'Gastos varios Aless', tipo: 'gasto', categoria: 'Gastos Varios Aless' },
-  { nombre: 'Gastos varios bruno', tipo: 'gasto', categoria: 'Gastos Varios Bruno' },
-  { nombre: 'Pedidos Ya', tipo: 'gasto', categoria: 'Alimentos y Limpieza' },
-  { nombre: 'Tarjetas de credito', tipo: 'gasto', categoria: 'Tarjetas de Credito' },
-  { nombre: 'UBER', tipo: 'gasto', categoria: 'Transporte' },
-  { nombre: 'Prestamo Scotia', tipo: 'gasto', categoria: 'Prestamos' },
-  { nombre: 'Prestamo Creditel', tipo: 'gasto', categoria: 'Prestamos' },
-  { nombre: 'Gastos varios comida', tipo: 'gasto', categoria: 'Alimentos y Limpieza' },
-  { nombre: 'Gastos varios casa', tipo: 'gasto', categoria: 'Gastos Varios casa' },
-  { nombre: 'Vacaciones y oseo', tipo: 'gasto', categoria: 'Vacaciones y Juntadas' },
-  { nombre: 'Nutricionista', tipo: 'gasto', categoria: 'Salud y gastos médicos' },
-  { nombre: 'OSE', tipo: 'gasto', categoria: 'Gastos fijos' },
-  { nombre: 'Omnibus recarga', tipo: 'gasto', categoria: 'Transporte' },
-  { nombre: 'Comida Afuera', tipo: 'gasto', categoria: 'Alimentos y Limpieza' },
-  { nombre: 'Salidas y esparcimiento', tipo: 'gasto', categoria: 'Oseo' },
-  { nombre: 'Juntadas y asados', tipo: 'gasto', categoria: 'Vacaciones y Juntadas' },
-  { nombre: 'TAXI', tipo: 'gasto', categoria: 'Transporte' },
-  { nombre: 'Ropa Mateo', tipo: 'gasto', categoria: 'Mateo' },
-  { nombre: 'Muebles Mateo', tipo: 'gasto', categoria: 'Mateo' },
-  { nombre: 'Varios Mateo', tipo: 'gasto', categoria: 'Mateo' },
-  { nombre: 'Masajes', tipo: 'gasto', categoria: 'Salud y gastos médicos' },
-  { nombre: 'Mutualista Aless', tipo: 'gasto', categoria: 'Salud y gastos médicos' },
-  { nombre: 'Mutualista Bruno', tipo: 'gasto', categoria: 'Salud y gastos médicos' },
-  { nombre: 'Farmacia', tipo: 'gasto', categoria: 'Salud y gastos médicos' },
-  { nombre: 'Ropa y accesorios Bruno', tipo: 'gasto', categoria: 'Vestimenta' },
-  { nombre: 'Ropa Y accesorios Aless', tipo: 'gasto', categoria: 'Vestimenta' },
-  { nombre: 'Peluquería y cuidado personal Aless', tipo: 'gasto', categoria: 'Cuidado personal' },
-  { nombre: 'Peluquería y Cuidado personal Bruno', tipo: 'gasto', categoria: 'Cuidado personal' },
-  { nombre: 'Lavadero', tipo: 'gasto', categoria: 'Gastos Varios casa' },
-  { nombre: 'Pilates', tipo: 'gasto', categoria: 'Salud y gastos médicos' },
-  { nombre: 'Mantenimiento Casa', tipo: 'gasto', categoria: 'Mantenimiento Casa' },
-  { nombre: 'Ajuste de caja', tipo: 'gasto', categoria: 'Ajuste de caja' },
-  { nombre: 'Regalos', tipo: 'gasto', categoria: 'Regalos, etc' },
-  { nombre: 'pañales e higiene Mateo', tipo: 'gasto', categoria: 'Mateo' },
-  { nombre: 'Mutualista Mateo', tipo: 'gasto', categoria: 'Mateo' },
-  { nombre: 'Farmacia Mateo', tipo: 'gasto', categoria: 'Mateo' },
-  { nombre: 'Accesorios Mateo', tipo: 'gasto', categoria: 'Mateo' },
-  { nombre: 'Limpieza', tipo: 'gasto', categoria: 'Alimentos y Limpieza' },
-  { nombre: 'Nafta', tipo: 'gasto', categoria: 'Auto' },
-  { nombre: 'patente', tipo: 'gasto', categoria: 'Auto' },
-  { nombre: 'seguro', tipo: 'gasto', categoria: 'Auto' },
-  { nombre: 'estacionamiento', tipo: 'gasto', categoria: 'Auto' },
-  { nombre: 'arreglos auto', tipo: 'gasto', categoria: 'Auto' },
-  { nombre: 'Terapia', tipo: 'gasto', categoria: 'Gastos Varios Aless' },
-  { nombre: 'Peajes', tipo: 'gasto', categoria: 'Auto' },
-  { nombre: 'taller', tipo: 'gasto', categoria: 'Auto' },
-  { nombre: 'insulina y medicacion', tipo: 'gasto', categoria: 'Boris' },
-  { nombre: 'veterinaria', tipo: 'gasto', categoria: 'Boris' },
-  { nombre: 'peajes', tipo: 'gasto', categoria: 'Auto' },
-  { nombre: 'Pisicina Mateo', tipo: 'gasto', categoria: 'Mateo' },
-  { nombre: 'Sexur', tipo: 'gasto', categoria: 'Educación' },
-  { nombre: 'Cumpleaños Mateo', tipo: 'gasto', categoria: 'cumpleaños y festejos' },
-  { nombre: 'Comida Mambo', tipo: 'gasto', categoria: 'Mambo' },
-  { nombre: 'Veterinaria Mambo', tipo: 'gasto', categoria: 'Mambo' },
-  { nombre: 'Accesorios Mambo', tipo: 'gasto', categoria: 'Mambo' },
-  { nombre: 'Adiestrador y hotel mambo', tipo: 'gasto', categoria: 'Mambo' }
-];
+const CONCEPTOS = [];
 
-const CATEGORIAS = {
-  ingreso: unique(CONCEPTOS.filter(c => c.tipo === 'ingreso').map(c => c.categoria)),
-  gasto: unique(CONCEPTOS.filter(c => c.tipo === 'gasto').map(c => c.categoria))
-};
-const ALL_CATEGORIAS = unique([...CATEGORIAS.ingreso, ...CATEGORIAS.gasto]);
+const CATEGORIAS = { ingreso: [], gasto: [] };
+const ALL_CATEGORIAS = [];
 const COLORS = ['#25734b', '#235b9f', '#b23636', '#916400', '#7057a6', '#0f766e', '#c05220', '#557a2a', '#9d3560', '#64748b', '#7c4a03', '#0e7490'];
 const ICONS = { efectivo: '$', banco: 'B', tarjeta: 'T', ahorro: 'A', otro: 'O' };
 
@@ -534,7 +504,9 @@ let state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos
 let currentTipo = 'gasto';
 let editingCuentaId = null;
 let editingMovimientoId = null;
+let editingCategoriaId = null;
 let chartCat = null;
+let chartIncomeCat = null;
 let chartMonths = null;
 let bankImportRows = [];
 
@@ -1528,6 +1500,589 @@ function refreshAll() {
   renderMovimientos();
   renderCuentas();
   renderPresupuesto();
+}
+
+/* Categorias editables y login obligatorio */
+function ensureStateShape() {
+  if (!Array.isArray(state.cuentas)) state.cuentas = [];
+  if (!Array.isArray(state.movimientos)) state.movimientos = [];
+  if (!Array.isArray(state.presupuestos)) state.presupuestos = [];
+  if (!Array.isArray(state.deletedMovimientos)) state.deletedMovimientos = [];
+  if (!Array.isArray(state.categories)) state.categories = [];
+}
+function getCategories(tipo) {
+  ensureStateShape();
+  return state.categories
+    .filter(c => !tipo || c.tipo === tipo)
+    .slice()
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+}
+function categoryNames(tipo) { return getCategories(tipo).map(c => c.nombre); }
+function allCategories() { return unique(state.movimientos.map(m => m.categoria).concat(categoryNames()).filter(Boolean)); }
+function defaultCategory(tipo) { return categoryNames(tipo)[0] || 'Sin categoria'; }
+function categoryForDescription(desc, tipo) {
+  const norm = normalizeText(desc);
+  const cats = categoryNames(tipo);
+  const exact = cats.find(cat => norm.includes(normalizeText(cat)));
+  if (exact) return exact;
+  const rules = [
+    ['sueldo|salario|haberes|retiro|ingreso', 'Sueldo'],
+    ['super|mercado|devoto|disco|tienda inglesa|ta-ta|tata|almacen|feria|verduleria|carniceria|pedido|restaurante|bar|comida', 'Alimentos'],
+    ['antel|wifi|internet|ute|ose|gas|alquiler|gastos comunes', 'Gastos fijos'],
+    ['uber|taxi|omnibus|nafta|ancap|combustible|peaje|estacionamiento', 'Transporte'],
+    ['farmacia|mutualista|medica|medico|salud|terapia|pilates|nutricionista', 'Salud'],
+    ['spotify|disney|salida|vacaciones|asado', 'Ocio'],
+    ['ropa|vestimenta|peluqueria|cuidado personal', 'Personal'],
+    ['mateo|panal|pañal|cumpleanos|cumpleaños', 'Mateo'],
+    ['regalo', 'Regalos']
+  ];
+  for (const [pattern, suggested] of rules) {
+    if (new RegExp(pattern, 'i').test(norm)) {
+      const match = cats.find(cat => normalizeText(cat).includes(normalizeText(suggested)) || normalizeText(suggested).includes(normalizeText(cat)));
+      if (match) return match;
+    }
+  }
+  return defaultCategory(tipo);
+}
+function load() {
+  try { state = { ...state, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') }; } catch {}
+  ensureStateShape();
+  if (!state.cuentas.length) {
+    state.cuentas = [
+      { id: uid(), nombre: 'Efectivo', tipo: 'efectivo', saldoInicial: 0, color: '#25734b' },
+      { id: uid(), nombre: 'Banco', tipo: 'banco', saldoInicial: 0, color: '#235b9f' }
+    ];
+    save();
+  }
+}
+function save() {
+  ensureStateShape();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  renderSidebar();
+  scheduleCloudSync();
+}
+function refreshSelectors() {
+  fillMonthSelect(document.getElementById('dash-month'), document.getElementById('dash-month').value || currentMonth(), true);
+  fillMonthSelect(document.getElementById('filter-month'), document.getElementById('filter-month').value, true);
+  fillMonthSelect(document.getElementById('budget-month'), document.getElementById('budget-month').value || currentMonth());
+  fillSelect(document.getElementById('filter-cat'), allCategories(), document.getElementById('filter-cat').value, 'Todas las categorías');
+}
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('[data-page-btn]').forEach(b => b.classList.toggle('active', b.dataset.pageBtn === id));
+  document.getElementById('page-' + id).classList.add('active');
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'movimientos') renderMovimientos();
+  if (id === 'cuentas') renderCuentas();
+  if (id === 'presupuesto') renderPresupuesto();
+  if (id === 'categorias') renderCategorias();
+  if (id === 'nube') renderCloud();
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id === 'modal-cuenta') editingCuentaId = null;
+  if (id === 'modal-mov') editingMovimientoId = null;
+  if (id === 'modal-categoria') editingCategoriaId = null;
+}
+function setTipo(tipo, keepValues = false) {
+  const currentCategoria = document.getElementById('m-categoria').value;
+  currentTipo = tipo;
+  document.querySelectorAll('.type-switch button').forEach(b => b.dataset.active = String(b.dataset.type === tipo));
+  document.getElementById('m-dest-wrap').classList.toggle('hidden', tipo !== 'transferencia');
+  document.getElementById('m-cuenta-label').firstChild.textContent = tipo === 'transferencia' ? 'Cuenta origen' : 'Cuenta';
+  if (tipo === 'transferencia') fillSelect(document.getElementById('m-categoria'), ['Transferencia'], keepValues ? currentCategoria : 'Transferencia');
+  else fillSelect(document.getElementById('m-categoria'), categoryNames(tipo), keepValues ? currentCategoria : '');
+}
+function guardarMovimiento() {
+  const categoria = document.getElementById('m-categoria').value;
+  const desc = document.getElementById('m-desc').value.trim() || categoria;
+  const monto = Number(document.getElementById('m-monto').value);
+  const fecha = document.getElementById('m-fecha').value;
+  const cuentaId = document.getElementById('m-cuenta').value;
+  const notas = document.getElementById('m-notas').value.trim();
+  if (!categoria || !desc || !monto || !fecha || !cuentaId) return toast('Completa categoria, monto, fecha y cuenta.');
+  if (currentTipo !== 'transferencia' && !categoryNames(currentTipo).includes(categoria)) return toast('Primero crea esa categoria en la seccion Categorias.');
+  const mov = { id: editingMovimientoId || uid(), tipo: currentTipo, concepto: categoria, categoria, desc, monto: Math.abs(monto), fecha, cuentaId, notas };
+  if (currentTipo === 'transferencia') {
+    mov.cuentaDestId = document.getElementById('m-cuenta-dest').value;
+    if (!mov.cuentaDestId || mov.cuentaDestId === cuentaId) return toast('Elegi una cuenta destino diferente.');
+  }
+  if (editingMovimientoId) {
+    const idx = state.movimientos.findIndex(m => m.id === editingMovimientoId);
+    if (idx >= 0) state.movimientos[idx] = mov;
+  } else state.movimientos.push(mov);
+  save();
+  closeModal('modal-mov');
+  refreshAll();
+  toast(editingMovimientoId ? 'Movimiento actualizado' : 'Movimiento guardado');
+}
+function addMovimiento({ tipo, concepto, categoria, desc, monto, fecha, cuentaId, notas, cuentaDestId }) {
+  const finalCategoria = categoria || concepto || defaultCategory(tipo);
+  const mov = { id: uid(), tipo, concepto: finalCategoria, categoria: finalCategoria, desc: desc || finalCategoria, monto: Math.abs(Number(monto) || 0), fecha, cuentaId, notas: notas || '' };
+  if (cuentaDestId) mov.cuentaDestId = cuentaDestId;
+  state.movimientos.push(mov);
+}
+function editarMovimiento(id) {
+  const mov = state.movimientos.find(m => m.id === id);
+  if (!mov) return toast('No encontre ese movimiento.');
+  editingMovimientoId = id;
+  document.getElementById('mov-title').textContent = 'Editar movimiento';
+  fillSelect(document.getElementById('m-cuenta'), state.cuentas, mov.cuentaId);
+  fillSelect(document.getElementById('m-cuenta-dest'), state.cuentas, mov.cuentaDestId);
+  setTipo(mov.tipo || 'gasto', true);
+  const catEl = document.getElementById('m-categoria');
+  if (mov.categoria && ![...catEl.options].some(o => o.value === mov.categoria)) catEl.appendChild(new Option(mov.categoria, mov.categoria, true, true));
+  catEl.value = mov.categoria || '';
+  document.getElementById('m-desc').value = mov.desc || '';
+  document.getElementById('m-monto').value = mov.monto || '';
+  document.getElementById('m-fecha').value = mov.fecha || today();
+  document.getElementById('m-cuenta').value = mov.cuentaId || '';
+  document.getElementById('m-cuenta-dest').value = mov.cuentaDestId || '';
+  document.getElementById('m-notas').value = mov.notas || '';
+  openModal('modal-mov');
+}
+function renderDashboard() {
+  refreshSelectors();
+  const month = document.getElementById('dash-month').value;
+  const movs = month ? state.movimientos.filter(m => (m.fecha || '').startsWith(month)) : state.movimientos;
+  const ingresos = movs.filter(m => m.tipo === 'ingreso').reduce((s,m) => s + m.monto, 0);
+  const gastos = movs.filter(m => m.tipo === 'gasto').reduce((s,m) => s + m.monto, 0);
+  const resultado = ingresos - gastos;
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><span>Ingresos</span><strong class="green">${money(ingresos)}</strong></div>
+    <div class="metric"><span>Gastos</span><strong class="red">${money(gastos)}</strong></div>
+    <div class="metric"><span>Resultado</span><strong class="${resultado >= 0 ? 'green' : 'red'}">${money(resultado)}</strong></div>
+    <div class="metric"><span>Balance total</span><strong>${money(totalBalance())}</strong></div>
+  `;
+  renderChartCat(movs);
+  renderChartIncomeCat(movs);
+  renderChartMonths();
+  renderRows(document.getElementById('recent-body'), [...state.movimientos].sort((a,b) => b.fecha.localeCompare(a.fecha)).slice(0, 8), false);
+}
+function renderChartIncomeCat(movs) {
+  const byCat = {};
+  movs.filter(m => m.tipo === 'ingreso').forEach(m => byCat[m.categoria] = (byCat[m.categoria] || 0) + m.monto);
+  const labels = Object.keys(byCat).sort((a,b) => byCat[b] - byCat[a]).slice(0, 10);
+  const data = labels.map(l => byCat[l]);
+  if (chartIncomeCat) chartIncomeCat.destroy();
+  chartIncomeCat = new Chart(document.getElementById('chart-income-cat'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Ingresos', data, backgroundColor: '#25734b55', borderColor: '#25734b', borderWidth: 1 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => '$' + Number(v).toLocaleString('es-UY') } } } }
+  });
+}
+function renderRows(tbody, movs, withActions = true) {
+  if (!movs.length) {
+    tbody.innerHTML = `<tr><td colspan="${withActions ? 7 : 5}"><div class="empty">Sin movimientos todavia.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = movs.map(m => {
+    const cuenta = state.cuentas.find(c => c.id === m.cuentaId);
+    const sign = m.tipo === 'ingreso' ? '+' : m.tipo === 'gasto' ? '-' : '⇄';
+    const cls = m.tipo === 'ingreso' ? 'green' : m.tipo === 'gasto' ? 'red' : 'blue';
+    const desc = m.desc || m.categoria || '';
+    if (!withActions) return `<tr><td>${dateFmt(m.fecha)}</td><td>${desc}</td><td><span class="badge gray">${m.categoria || '-'}</span></td><td>${cuenta ? cuenta.nombre : '-'}</td><td class="right ${cls}"><strong>${sign} ${money(m.monto)}</strong></td></tr>`;
+    return `<tr>
+      <td>${dateFmt(m.fecha)}</td>
+      <td>${desc}${m.notas ? `<br><small class="muted">${m.notas}</small>` : ''}</td>
+      <td><span class="badge gray">${m.categoria || '-'}</span></td>
+      <td>${cuenta ? cuenta.nombre : '-'}</td>
+      <td><span class="badge ${cls}">${m.tipo}</span></td>
+      <td class="right ${cls}"><strong>${sign} ${money(m.monto)}</strong></td>
+      <td class="right"><button class="btn sm" onclick="editarMovimiento('${m.id}')">Editar</button> <button class="btn sm danger" onclick="eliminarMovimiento('${m.id}')">Eliminar</button></td>
+    </tr>`;
+  }).join('');
+}
+function openCategoria(id) {
+  const cat = id ? state.categories.find(c => c.id === id) : null;
+  editingCategoriaId = id || null;
+  document.getElementById('categoria-title').textContent = cat ? 'Editar categoria' : 'Nueva categoria';
+  document.getElementById('cat-nombre').value = cat ? cat.nombre : '';
+  document.getElementById('cat-tipo').value = cat ? cat.tipo : 'gasto';
+  document.getElementById('categoria-delete').classList.toggle('hidden', !cat);
+  openModal('modal-categoria');
+}
+function guardarCategoria() {
+  const nombre = document.getElementById('cat-nombre').value.trim();
+  const tipo = document.getElementById('cat-tipo').value;
+  if (!nombre) return toast('Ingresa un nombre de categoria.');
+  const duplicate = state.categories.find(c => c.id !== editingCategoriaId && c.tipo === tipo && normalizeKey(c.nombre) === normalizeKey(nombre));
+  if (duplicate) return toast('Esa categoria ya existe.');
+  if (editingCategoriaId) {
+    const cat = state.categories.find(c => c.id === editingCategoriaId);
+    const oldName = cat.nombre;
+    const oldType = cat.tipo;
+    Object.assign(cat, { nombre, tipo });
+    state.movimientos.forEach(m => { if (m.tipo === oldType && m.categoria === oldName) { m.categoria = nombre; m.concepto = nombre; } });
+    state.presupuestos.forEach(p => { if (p.categoria === oldName) { p.categoria = nombre; p.key = `${p.mes}_${nombre}`; } });
+  } else state.categories.push({ id: uid(), nombre, tipo });
+  save();
+  closeModal('modal-categoria');
+  refreshAll();
+  toast('Categoria guardada');
+}
+function eliminarCategoria() {
+  const cat = state.categories.find(c => c.id === editingCategoriaId);
+  if (!cat) return;
+  const used = state.movimientos.some(m => m.categoria === cat.nombre) || state.presupuestos.some(p => p.categoria === cat.nombre);
+  if (used && !confirm('Esta categoria tiene movimientos o presupuestos. Si la eliminas, esos registros quedan con la categoria guardada pero ya no aparecera como opcion. Continuar?')) return;
+  state.categories = state.categories.filter(c => c.id !== editingCategoriaId);
+  save();
+  closeModal('modal-categoria');
+  refreshAll();
+  toast('Categoria eliminada');
+}
+function renderCategorias() {
+  ensureStateShape();
+  ['ingreso', 'gasto'].forEach(tipo => {
+    const el = document.getElementById('cat-' + tipo);
+    const cats = getCategories(tipo);
+    if (!cats.length) {
+      el.innerHTML = '<div class="empty">Sin categorias todavia.</div>';
+      return;
+    }
+    el.innerHTML = cats.map(cat => `<div class="category-row"><strong>${cat.nombre}</strong><button class="btn sm" onclick="openCategoria('${cat.id}')">Editar</button><button class="btn sm danger" onclick="openCategoria('${cat.id}');eliminarCategoria()">Eliminar</button></div>`).join('');
+  });
+}
+function openPresupuesto() {
+  fillSelect(document.getElementById('p-categoria'), categoryNames('gasto'));
+  document.getElementById('p-mes').value = document.getElementById('budget-month').value || currentMonth();
+  document.getElementById('p-monto').value = '';
+  openModal('modal-presupuesto');
+}
+function openComprobante() {
+  resetReceipt();
+  fillSelect(document.getElementById('r-cuenta'), state.cuentas);
+  fillSelect(document.getElementById('r-categoria'), categoryNames('gasto'));
+  document.getElementById('r-fecha').value = today();
+  openModal('modal-comprobante');
+}
+function applyReceiptResult(result) {
+  if (!result || result.is_receipt === false) throw new Error('No parece ser un comprobante');
+  const categoria = categoryNames('gasto').includes(result.categoria) ? result.categoria : categoryForDescription(`${result.desc || ''} ${result.concepto || ''}`, 'gasto');
+  document.getElementById('r-categoria').value = categoria;
+  document.getElementById('r-desc').value = result.desc || result.concepto || categoria;
+  document.getElementById('r-monto').value = result.monto ? Math.abs(Number(result.monto)).toFixed(2) : '';
+  document.getElementById('r-fecha').value = parseDateValue(result.fecha) || today();
+  document.getElementById('r-notas').value = result.notas || 'Cargado con IA';
+  document.getElementById('receipt-form').classList.remove('hidden');
+  document.getElementById('receipt-save').classList.remove('hidden');
+}
+async function handleReceiptFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const aiConcepts = getCategories().map(c => ({ nombre: c.nombre, tipo: c.tipo, categoria: c.nombre }));
+  try {
+    setStatus('receipt-status', 'Analizando comprobante con IA...');
+    const aiResult = await postJSON('/.netlify/functions/analyze-receipt', {
+      file: { name: file.name, type: file.type || 'image/jpeg', data: await fileToBase64(file) },
+      concepts: aiConcepts,
+      today: today()
+    });
+    applyReceiptResult(aiResult);
+    setStatus('receipt-status', 'IA lista. Revisa los datos y guardalos.');
+    return;
+  } catch (aiErr) {
+    console.warn('IA no disponible, usando lectura local', aiErr);
+  }
+  try {
+    setStatus('receipt-status', 'Leyendo comprobante...');
+    let text = '';
+    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) text = await readPDFText(file);
+    else if (window.Tesseract) {
+      setStatus('receipt-status', 'Reconociendo texto de la foto. Puede tardar unos segundos...');
+      const result = await Tesseract.recognize(file, 'spa+eng');
+      text = result.data.text || '';
+    }
+    const amount = Math.abs(bestAmountFromText(text) || 0);
+    const date = parseDateValue(text) || today();
+    const lines = text.split(/\n+/).map(s => s.trim()).filter(s => s.length > 3);
+    const desc = lines.find(l => !parseDateValue(l) && parseMoney(l) === null) || file.name.replace(/\.[^.]+$/, '');
+    const categoria = categoryForDescription(desc + ' ' + text, 'gasto');
+    document.getElementById('r-categoria').value = categoria;
+    document.getElementById('r-desc').value = desc.slice(0, 80);
+    document.getElementById('r-monto').value = amount ? amount.toFixed(2) : '';
+    document.getElementById('r-fecha').value = date;
+    document.getElementById('r-notas').value = 'Cargado desde comprobante';
+    document.getElementById('receipt-form').classList.remove('hidden');
+    document.getElementById('receipt-save').classList.remove('hidden');
+    setStatus('receipt-status', amount ? 'Datos detectados. Revisalos y guardalos.' : 'No pude detectar el monto con seguridad. Completalo manualmente y guardalo.');
+  } catch (err) {
+    setStatus('receipt-status', 'No pude leer el comprobante. Proba con una foto mas clara o carga los datos manualmente.');
+  }
+}
+function guardarComprobante() {
+  const monto = Number(document.getElementById('r-monto').value);
+  const cuentaId = document.getElementById('r-cuenta').value;
+  const categoria = document.getElementById('r-categoria').value;
+  if (!monto || !cuentaId || !categoria) return toast('Completa categoria, monto y cuenta.');
+  addMovimiento({
+    tipo: 'gasto',
+    categoria,
+    desc: document.getElementById('r-desc').value.trim() || categoria,
+    monto,
+    fecha: document.getElementById('r-fecha').value || today(),
+    cuentaId,
+    notas: document.getElementById('r-notas').value.trim()
+  });
+  save();
+  closeModal('modal-comprobante');
+  refreshAll();
+  toast('Gasto cargado desde comprobante');
+}
+function parseBankMovements(rows, defaultType) {
+  const movements = [];
+  let headers = [];
+  rows.forEach(rawRow => {
+    const row = rawRow.map(v => String(v ?? '').trim());
+    const line = row.join(' ').trim();
+    const norm = normalizeText(line);
+    if (!line || /saldo|total|encabezado|moneda|cuenta|fecha\s+descripcion/.test(norm) && !/\d/.test(norm.replace(/\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}/, ''))) {
+      if (/fecha|descripcion|debito|credito|importe|monto|haber|debe/.test(norm)) headers = row.map(normalizeText);
+      return;
+    }
+    if (/fecha|descripcion|debito|credito|importe|monto|haber|debe/.test(norm) && !parseDateValue(line)) {
+      headers = row.map(normalizeText);
+      return;
+    }
+    const fecha = row.map(parseDateValue).find(Boolean) || parseDateValue(line);
+    if (!fecha) return;
+    const amountCells = row.map((cell, i) => ({ i, value: parseMoney(cell), text: cell })).filter(x => x.value !== null && Math.abs(x.value) > 0.01);
+    const cleanAmountCells = amountCells.filter(x => Math.abs(x.value) < 100000000 && !String(x.text).match(/^\d{4}$/));
+    if (!cleanAmountCells.length) return;
+    let picked = cleanAmountCells[cleanAmountCells.length - 1];
+    let tipo = picked.value < 0 ? 'gasto' : defaultType;
+    const debit = cleanAmountCells.find(x => /debito|debe|egreso|retiro|cargo/.test(headers[x.i] || ''));
+    const credit = cleanAmountCells.find(x => /credito|haber|ingreso|deposito/.test(headers[x.i] || ''));
+    if (debit && Math.abs(debit.value) > 0) { picked = debit; tipo = 'gasto'; }
+    else if (credit && Math.abs(credit.value) > 0) { picked = credit; tipo = 'ingreso'; }
+    else if (/credito|haber|deposito|sueldo|transferencia recibida/.test(norm)) tipo = 'ingreso';
+    else if (/debito|compra|pago|retiro|cargo|pos|transferencia enviada/.test(norm)) tipo = 'gasto';
+    const descParts = row.filter((cell, i) => cell && !parseDateValue(cell) && i !== picked.i && parseMoney(cell) === null);
+    const desc = (descParts.join(' ') || line).replace(/\s+/g, ' ').slice(0, 120);
+    movements.push({ tipo, categoria: categoryForDescription(desc, tipo), desc, monto: Math.abs(picked.value), fecha, notas: 'Importado de estado bancario' });
+  });
+  const seen = new Set();
+  return movements.filter(m => {
+    const key = `${m.fecha}|${m.tipo}|${m.monto}|${m.desc}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+function renderBankPreview() {
+  const body = document.getElementById('bank-preview-body');
+  body.innerHTML = bankImportRows.map(m => `<tr>
+    <td>${dateFmt(m.fecha)}</td>
+    <td>${m.desc}</td>
+    <td><span class="badge gray">${m.categoria}</span></td>
+    <td><span class="badge ${m.tipo === 'ingreso' ? 'green' : 'red'}">${m.tipo}</span></td>
+    <td class="right ${m.tipo === 'ingreso' ? 'green' : 'red'}"><strong>${money(m.monto)}</strong></td>
+  </tr>`).join('');
+  document.getElementById('bank-preview').classList.toggle('hidden', !bankImportRows.length);
+}
+async function handleBankFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    setStatus('bank-status', 'Leyendo archivo...');
+    let rows = [];
+    if (/\.(xlsx|xls|csv)$/i.test(file.name)) rows = await readSpreadsheetRows(file);
+    else if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) rows = (await readPDFText(file)).split(/\n+/).map(line => [line]);
+    else throw new Error('Formato no soportado');
+    const rawText = rows.map(row => row.join(' | ')).join('\n');
+    try {
+      setStatus('bank-status', 'Analizando movimientos con IA...');
+      const aiResult = await postJSON('/.netlify/functions/analyze-bank-statement', {
+        fileName: file.name,
+        text: rawText,
+        concepts: getCategories().map(c => ({ nombre: c.nombre, tipo: c.tipo, categoria: c.nombre })),
+        defaultType: document.getElementById('bank-default-type').value
+      });
+      bankImportRows = (aiResult.movimientos || []).map(m => {
+        const tipo = m.tipo || 'gasto';
+        const fallback = categoryForDescription(`${m.desc || ''} ${m.concepto || ''}`, tipo);
+        return {
+          tipo,
+          categoria: categoryNames(tipo).includes(m.categoria) ? m.categoria : fallback,
+          desc: m.desc || m.concepto || fallback,
+          monto: Math.abs(Number(m.monto) || 0),
+          fecha: parseDateValue(m.fecha) || today(),
+          notas: m.notas || 'Importado con IA'
+        };
+      }).filter(m => m.monto > 0);
+    } catch (aiErr) {
+      console.warn('IA no disponible, usando parser local', aiErr);
+      bankImportRows = parseBankMovements(rows, document.getElementById('bank-default-type').value);
+    }
+    renderBankPreview();
+    setStatus('bank-status', `${bankImportRows.length} movimientos detectados. Revisa la vista previa antes de importar.`);
+    if (bankImportRows.length) document.getElementById('bank-save').classList.remove('hidden');
+  } catch (err) {
+    setStatus('bank-status', 'No pude procesar ese archivo. Proba exportarlo como Excel/CSV o PDF con texto seleccionable.');
+  }
+}
+function exportCSV() {
+  if (!state.movimientos.length) return toast('No hay movimientos para exportar.');
+  const header = ['Fecha','Descripcion','Categoria','Cuenta','Tipo','Monto'];
+  const lines = state.movimientos.map(m => {
+    const cuenta = state.cuentas.find(c => c.id === m.cuentaId);
+    return [m.fecha, m.desc, m.categoria, cuenta ? cuenta.nombre : '', m.tipo, m.monto]
+      .map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',');
+  });
+  const blob = new Blob(['\uFEFF' + [header.join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `finanzas_hogar_${today()}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function exportExcel() {
+  if (!window.XLSX) return toast('No se pudo cargar la libreria de Excel.');
+  const wb = XLSX.utils.book_new();
+  const movimientos = state.movimientos.slice().sort((a, b) => a.fecha.localeCompare(b.fecha)).map(m => {
+    const cuenta = state.cuentas.find(c => c.id === m.cuentaId);
+    const destino = state.cuentas.find(c => c.id === m.cuentaDestId);
+    return { Fecha: m.fecha, Descripcion: m.desc, Categoria: m.categoria, Cuenta: cuenta ? cuenta.nombre : '', CuentaDestino: destino ? destino.nombre : '', Tipo: m.tipo, Monto: m.monto, Notas: m.notas || '' };
+  });
+  const cuentas = state.cuentas.map(c => ({ Nombre: c.nombre, Tipo: c.tipo, SaldoInicial: c.saldoInicial, SaldoActual: calcCuenta(c.id) }));
+  const presupuestos = state.presupuestos.map(p => ({ Mes: p.mes, Categoria: p.categoria, Monto: p.monto }));
+  const categorias = state.categories.map(c => ({ Nombre: c.nombre, Tipo: c.tipo }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(movimientos), 'Movimientos');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cuentas), 'Cuentas');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(presupuestos), 'Presupuestos');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categorias), 'Categorias');
+  XLSX.writeFile(wb, `finanzas_hogar_${today()}.xlsx`);
+}
+function updateAuthUI() {
+  const logged = Boolean(cloudSession);
+  document.getElementById('auth-screen')?.classList.toggle('hidden', logged);
+  document.getElementById('app-shell')?.classList.toggle('hidden', !logged);
+  if (logged) {
+    setCloudText('auth-status', 'Sesion iniciada.');
+    refreshAll();
+  }
+}
+async function initSupabase() {
+  const config = getCloudConfig();
+  if (!config.url || !config.anonKey || !window.supabase) {
+    supabaseClient = null;
+    cloudSession = null;
+    updateAuthUI();
+    return false;
+  }
+  const nextClientKey = `${config.url}|${config.anonKey}`;
+  if (!supabaseClient || cloudClientKey !== nextClientKey) {
+    cloudClientKey = nextClientKey;
+    supabaseClient = supabase.createClient(config.url, config.anonKey, {
+      auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
+    });
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      cloudSession = session;
+      updateAuthUI();
+      if (session) scheduleCloudSync(800);
+      if (document.getElementById('page-nube')?.classList.contains('active')) renderCloud();
+    });
+  }
+  const { data } = await supabaseClient.auth.getSession();
+  cloudSession = data.session;
+  updateAuthUI();
+  return true;
+}
+async function sendLoginLink() {
+  const urlInput = document.getElementById('cloud-url')?.value.trim();
+  const keyInput = document.getElementById('cloud-key')?.value.trim();
+  if (urlInput && keyInput) await saveCloudConfig();
+  else await initSupabase();
+  if (!supabaseClient) return;
+  const email = (document.getElementById('cloud-email')?.value || document.getElementById('auth-email')?.value || '').trim();
+  if (!email) return toast('Ingresa tu email.');
+  const { error } = await supabaseClient.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href.split('#')[0] } });
+  if (error) {
+    setCloudText('cloud-status', 'Error: ' + error.message);
+    return setCloudText('auth-status', 'Error: ' + error.message);
+  }
+  setCloudText('cloud-status', 'Listo. Revisa tu email y abri el link de acceso.');
+  setCloudText('auth-status', 'Listo. Revisa tu email y abri el link de acceso.');
+}
+async function sendAuthLoginLink() {
+  document.getElementById('cloud-email').value = document.getElementById('auth-email').value;
+  return sendLoginLink();
+}
+async function loginWithGitHub() {
+  const urlInput = document.getElementById('cloud-url')?.value.trim();
+  const keyInput = document.getElementById('cloud-key')?.value.trim();
+  if (urlInput && keyInput) await saveCloudConfig();
+  else await initSupabase();
+  if (!supabaseClient) return;
+  setCloudText('cloud-status', 'Abriendo GitHub...');
+  setCloudText('auth-status', 'Abriendo GitHub...');
+  const { error } = await supabaseClient.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: window.location.href.split('#')[0] } });
+  if (error) {
+    setCloudText('cloud-status', 'Error con GitHub: ' + error.message);
+    setCloudText('auth-status', 'Error con GitHub: ' + error.message);
+  }
+}
+async function signOutCloud() {
+  if (!supabaseClient) await initSupabase();
+  if (supabaseClient) await supabaseClient.auth.signOut();
+  cloudSession = null;
+  updateAuthUI();
+  renderCloud();
+}
+function normalizeFinanceState(data) {
+  return {
+    cuentas: Array.isArray(data?.cuentas) ? data.cuentas : [],
+    movimientos: Array.isArray(data?.movimientos) ? data.movimientos : [],
+    presupuestos: Array.isArray(data?.presupuestos) ? data.presupuestos : [],
+    deletedMovimientos: Array.isArray(data?.deletedMovimientos) ? data.deletedMovimientos : [],
+    categories: Array.isArray(data?.categories) ? data.categories : []
+  };
+}
+function mergeFinanceStates(localData, cloudData) {
+  const local = normalizeFinanceState(localData);
+  const cloud = normalizeFinanceState(cloudData);
+  const accountIdMap = {};
+  const merged = {
+    cuentas: local.cuentas.map(c => ({ ...c })),
+    movimientos: [],
+    presupuestos: local.presupuestos.map(p => ({ ...p })),
+    categories: local.categories.map(c => ({ ...c })),
+    deletedMovimientos: [...new Set([...local.deletedMovimientos, ...cloud.deletedMovimientos])]
+  };
+  mergeByIdOrKey(merged.cuentas, cloud.cuentas, c => `${normalizeKey(c.tipo)}|${normalizeKey(c.nombre)}`, accountIdMap);
+  mergeByIdOrKey(merged.categories, cloud.categories, c => `${normalizeKey(c.tipo)}|${normalizeKey(c.nombre)}`);
+  const addMergedMovimiento = item => {
+    const mov = remapMovimientoAccounts(item, accountIdMap);
+    if (mov.id && merged.deletedMovimientos.includes(mov.id)) return;
+    const exists = merged.movimientos.some(x => (mov.id && x.id === mov.id) || movimientoKey(x) === movimientoKey(mov));
+    if (!exists) merged.movimientos.push({ ...mov, id: mov.id || uid() });
+  };
+  local.movimientos.forEach(addMergedMovimiento);
+  cloud.movimientos.forEach(addMergedMovimiento);
+  const budgetKey = p => p.key || `${p.mes}_${p.categoria}`;
+  mergeByIdOrKey(merged.presupuestos, cloud.presupuestos.map(p => ({ ...p, key: budgetKey(p) })), budgetKey);
+  return merged;
+}
+async function downloadFromCloud() {
+  if (!(await requireCloudSession())) return;
+  setCloudText('sync-status', 'Bajando datos...');
+  const { data, error } = await supabaseClient.from('finance_states').select('data, updated_at').eq('user_id', cloudSession.user.id).single();
+  if (error) return setCloudText('sync-status', 'No encontre datos en Supabase para este usuario.');
+  if (!confirm('Esto reemplaza los datos locales con lo guardado en Supabase. Continuar?')) return;
+  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], categories: [], ...(data.data || {}) };
+  ensureStateShape();
+  save();
+  refreshAll();
+  setCloudText('sync-status', `Datos descargados. Ultima nube: ${new Date(data.updated_at).toLocaleString('es-UY')}`);
+}
+function refreshAll() {
+  renderSidebar();
+  renderDashboard();
+  renderMovimientos();
+  renderCuentas();
+  renderPresupuesto();
+  renderCategorias();
 }
 
 if (window.pdfjsLib) {
