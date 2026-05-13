@@ -262,6 +262,7 @@
         </div>
         <div class="actions">
           <select id="recurring-month" onchange="renderRecurrentesPage()"></select>
+          <button class="btn" onclick="exportCurrentViewExcel()">Excel</button>
           <button class="btn" onclick="showPage('dashboard')">Volver a inicio</button>
         </div>
       </div>
@@ -283,10 +284,11 @@
         </div>
         <div class="actions">
           <select id="filter-type" onchange="renderMovimientos()"><option value="">Todos</option><option value="ingreso">Ingresos</option><option value="gasto">Gastos</option><option value="transferencia">Transferencias</option></select>
+          <select id="filter-account" onchange="renderMovimientos()"></select>
           <select id="filter-cat" onchange="renderMovimientos()"></select>
           <select id="filter-month" onchange="renderMovimientos()"></select>
           <button class="btn" onclick="exportCSV()">↓ CSV</button>
-          <button class="btn" onclick="exportExcel()">Excel</button>
+          <button class="btn" onclick="exportCurrentViewExcel()">Excel</button>
           <button class="btn primary" onclick="openMovimiento()">+ Nuevo</button>
         </div>
       </div>
@@ -299,7 +301,10 @@
           <h2>Cuentas</h2>
           <p class="muted">Saldo inicial más ingresos, gastos y transferencias.</p>
         </div>
-        <button class="btn primary" onclick="openCuenta()">+ Nueva cuenta</button>
+        <div class="actions">
+          <button class="btn" onclick="exportCurrentViewExcel()">Excel</button>
+          <button class="btn primary" onclick="openCuenta()">+ Nueva cuenta</button>
+        </div>
       </div>
       <div class="grid account-grid" id="account-grid"></div>
     </section>
@@ -312,6 +317,7 @@
         </div>
         <div class="actions">
           <select id="budget-month" onchange="renderPresupuesto()"></select>
+          <button class="btn" onclick="exportCurrentViewExcel()">Excel</button>
           <button class="btn primary" onclick="openPresupuesto()">+ Fijar presupuesto</button>
         </div>
       </div>
@@ -324,7 +330,10 @@
           <h2>Categorias</h2>
           <p class="muted">Crea, edita o elimina las categorias que usas para ingresos y gastos.</p>
         </div>
-        <button class="btn primary" onclick="openCategoria()">+ Nueva categoria</button>
+        <div class="actions">
+          <button class="btn" onclick="exportCurrentViewExcel()">Excel</button>
+          <button class="btn primary" onclick="openCategoria()">+ Nueva categoria</button>
+        </div>
       </div>
       <div class="grid two-col">
         <div class="card">
@@ -827,15 +836,21 @@ function renderRows(tbody, movs, withActions = true) {
     </tr>`;
   }).join('');
 }
-function renderMovimientos() {
+function getFilteredMovimientos() {
   refreshSelectors();
   const type = document.getElementById('filter-type').value;
+  const account = document.getElementById('filter-account').value;
   const cat = document.getElementById('filter-cat').value;
   const month = document.getElementById('filter-month').value;
   let movs = [...state.movimientos].sort((a,b) => b.fecha.localeCompare(a.fecha));
   if (type) movs = movs.filter(m => m.tipo === type);
+  if (account) movs = movs.filter(m => m.cuentaId === account || m.cuentaDestId === account);
   if (cat) movs = movs.filter(m => m.categoria === cat);
   if (month) movs = movs.filter(m => (m.fecha || '').startsWith(month));
+  return movs;
+}
+function renderMovimientos() {
+  const movs = getFilteredMovimientos();
   renderRows(document.getElementById('mov-body'), movs, true);
 }
 
@@ -859,7 +874,11 @@ function guardarCuenta() {
     saldoInicial: Number(document.getElementById('c-saldo').value || 0),
     color: document.getElementById('c-color').value
   };
-  if (editingCuentaId) Object.assign(state.cuentas.find(c => c.id === editingCuentaId), data);
+  if (editingCuentaId) {
+    const cuenta = state.cuentas.find(c => c.id === editingCuentaId);
+    if (!cuenta) return toast('No encontre esa cuenta.');
+    Object.assign(cuenta, data);
+  }
   else state.cuentas.push({ id: uid(), ...data });
   save();
   closeModal('modal-cuenta');
@@ -867,7 +886,19 @@ function guardarCuenta() {
   toast('Cuenta guardada');
 }
 function eliminarCuenta() {
-  if (!editingCuentaId || !confirm('¿Eliminar esta cuenta?')) return;
+  if (!editingCuentaId) return;
+  const cuenta = state.cuentas.find(c => c.id === editingCuentaId);
+  if (!cuenta) return toast('No encontre esa cuenta.');
+  const asociados = state.movimientos.filter(m => m.cuentaId === editingCuentaId || m.cuentaDestId === editingCuentaId);
+  const msg = asociados.length
+    ? `Eliminar "${cuenta.nombre}" tambien elimina ${asociados.length} movimiento${asociados.length === 1 ? '' : 's'} asociado${asociados.length === 1 ? '' : 's'}. Continuar?`
+    : `Eliminar "${cuenta.nombre}"?`;
+  if (!confirm(msg)) return;
+  if (!state.deletedCuentas.includes(editingCuentaId)) state.deletedCuentas.push(editingCuentaId);
+  asociados.forEach(m => {
+    if (m.id && !state.deletedMovimientos.includes(m.id)) state.deletedMovimientos.push(m.id);
+  });
+  state.movimientos = state.movimientos.filter(m => m.cuentaId !== editingCuentaId && m.cuentaDestId !== editingCuentaId);
   state.cuentas = state.cuentas.filter(c => c.id !== editingCuentaId);
   save();
   closeModal('modal-cuenta');
@@ -877,11 +908,12 @@ function renderCuentas() {
   const grid = document.getElementById('account-grid');
   grid.innerHTML = state.cuentas.map(c => {
     const balance = calcCuenta(c.id);
-    return `<div class="account-card" onclick="openCuenta('${c.id}')">
+    return `<div class="account-card">
       <div class="account-icon" style="background:${c.color}22;color:${c.color}">${ICONS[c.tipo] || 'O'}</div>
       <strong>${c.nombre}</strong>
       <span class="muted">${c.tipo}</span>
       <div class="balance ${balance >= 0 ? 'green' : 'red'}">${money(balance)}</div>
+      <div class="actions" style="margin-top:12px;"><button class="btn sm" onclick="openCuenta('${c.id}')">Editar</button></div>
     </div>`;
   }).join('');
 }
@@ -1565,6 +1597,7 @@ function ensureStateShape() {
   if (!Array.isArray(state.movimientos)) state.movimientos = [];
   if (!Array.isArray(state.presupuestos)) state.presupuestos = [];
   if (!Array.isArray(state.deletedMovimientos)) state.deletedMovimientos = [];
+  if (!Array.isArray(state.deletedCuentas)) state.deletedCuentas = [];
   if (!Array.isArray(state.categories)) state.categories = [];
 }
 function getCategories(tipo) {
@@ -1627,6 +1660,7 @@ function refreshSelectors() {
   fillMonthSelect(document.getElementById('filter-month'), document.getElementById('filter-month').value, true);
   fillMonthSelect(document.getElementById('budget-month'), document.getElementById('budget-month').value || currentMonth());
   fillRecurringMonthSelect(document.getElementById('recurring-month'), document.getElementById('recurring-month').value || document.getElementById('dash-month').value || currentMonth());
+  fillSelect(document.getElementById('filter-account'), state.cuentas, document.getElementById('filter-account').value, 'Todas las cuentas');
   fillSelect(document.getElementById('filter-cat'), allCategories(), document.getElementById('filter-cat').value, 'Todas las categorías');
 }
 function getRecurringMonths() {
@@ -2069,9 +2103,10 @@ async function handleBankFile(event) {
   }
 }
 function exportCSV() {
-  if (!state.movimientos.length) return toast('No hay movimientos para exportar.');
+  const movs = getFilteredMovimientos();
+  if (!movs.length) return toast('No hay movimientos para exportar.');
   const header = ['Fecha','Descripcion','Grupo','Categoria','Cuenta','Tipo','Monto'];
-  const lines = state.movimientos.map(m => {
+  const lines = movs.map(m => {
     const cuenta = state.cuentas.find(c => c.id === m.cuentaId);
     return [m.fecha, m.desc, categoryGroup(m.categoria), m.categoria, cuenta ? cuenta.nombre : '', m.tipo, m.monto]
       .map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',');
@@ -2099,6 +2134,69 @@ function exportExcel() {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(presupuestos), 'Presupuestos');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categorias), 'Categorias');
   XLSX.writeFile(wb, `finanzas_hogar_${today()}.xlsx`);
+}
+function movimientoExportRow(m) {
+  const cuenta = state.cuentas.find(c => c.id === m.cuentaId);
+  const destino = state.cuentas.find(c => c.id === m.cuentaDestId);
+  return {
+    Fecha: m.fecha,
+    Descripcion: m.desc,
+    Grupo: categoryGroup(m.categoria),
+    Categoria: m.categoria,
+    Cuenta: cuenta ? cuenta.nombre : '',
+    CuentaDestino: destino ? destino.nombre : '',
+    Tipo: m.tipo,
+    Monto: m.monto,
+    Notas: m.notas || ''
+  };
+}
+function exportCurrentViewExcel() {
+  if (!window.XLSX) return toast('No se pudo cargar la libreria de Excel.');
+  const active = document.querySelector('.page.active')?.id || '';
+  const wb = XLSX.utils.book_new();
+  let name = 'lista';
+  if (active === 'page-movimientos') {
+    name = 'movimientos';
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(getFilteredMovimientos().map(movimientoExportRow)), 'Movimientos');
+  } else if (active === 'page-cuentas') {
+    name = 'cuentas';
+    const rows = state.cuentas.map(c => ({ Nombre: c.nombre, Tipo: c.tipo, SaldoInicial: c.saldoInicial, SaldoActual: calcCuenta(c.id), Color: c.color }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Cuentas');
+  } else if (active === 'page-presupuesto') {
+    name = 'presupuesto';
+    const mes = document.getElementById('budget-month').value || currentMonth();
+    const gastos = state.movimientos.filter(m => m.tipo === 'gasto' && (m.fecha || '').startsWith(mes));
+    const spent = {};
+    gastos.forEach(m => spent[m.categoria] = (spent[m.categoria] || 0) + m.monto);
+    const budgets = state.presupuestos.filter(p => p.mes === mes);
+    const cats = unique([...Object.keys(spent), ...budgets.map(p => p.categoria)]);
+    const rows = cats.map(categoria => {
+      const budget = budgets.find(p => p.categoria === categoria);
+      const usado = spent[categoria] || 0;
+      return { Mes: mes, Categoria: categoria, Grupo: categoryGroup(categoria), Usado: usado, Presupuesto: budget ? budget.monto : 0, Diferencia: (budget ? budget.monto : 0) - usado };
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Presupuesto');
+  } else if (active === 'page-categorias') {
+    name = 'categorias';
+    const rows = state.categories.map(c => ({ Nombre: c.nombre, Tipo: c.tipo, Grupo: c.grupo || '', Recurrente: c.recurrente ? 'Si' : 'No' }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Categorias');
+  } else if (active === 'page-recurrentes') {
+    name = 'recurrentes';
+    const mes = document.getElementById('recurring-month').value || currentMonth();
+    const rows = recurrentRowsForMonth(mes).map(({ cat, grupo, rows, total, last }) => ({
+      Grupo: grupo,
+      Categoria: cat.nombre,
+      Mes: mes,
+      Estado: rows.length ? 'Registrado' : 'Pendiente',
+      Cantidad: rows.length,
+      UltimoGasto: last ? last.fecha : '',
+      Monto: total
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Recurrentes');
+  } else {
+    return exportExcel();
+  }
+  XLSX.writeFile(wb, `finanzas_hogar_${name}_${today()}.xlsx`);
 }
 function updateAuthUI() {
   const logged = Boolean(cloudSession);
@@ -2221,6 +2319,7 @@ function normalizeFinanceState(data) {
     movimientos: Array.isArray(data?.movimientos) ? data.movimientos : [],
     presupuestos: Array.isArray(data?.presupuestos) ? data.presupuestos : [],
     deletedMovimientos: Array.isArray(data?.deletedMovimientos) ? data.deletedMovimientos : [],
+    deletedCuentas: Array.isArray(data?.deletedCuentas) ? data.deletedCuentas : [],
     categories: Array.isArray(data?.categories) ? data.categories : []
   };
 }
@@ -2233,9 +2332,11 @@ function mergeFinanceStates(localData, cloudData) {
     movimientos: [],
     presupuestos: local.presupuestos.map(p => ({ ...p })),
     categories: local.categories.map(c => ({ ...c })),
-    deletedMovimientos: [...new Set([...local.deletedMovimientos, ...cloud.deletedMovimientos])]
+    deletedMovimientos: [...new Set([...local.deletedMovimientos, ...cloud.deletedMovimientos])],
+    deletedCuentas: [...new Set([...local.deletedCuentas, ...cloud.deletedCuentas])]
   };
-  mergeByIdOrKey(merged.cuentas, cloud.cuentas, c => `${normalizeKey(c.tipo)}|${normalizeKey(c.nombre)}`, accountIdMap);
+  merged.cuentas = merged.cuentas.filter(c => !merged.deletedCuentas.includes(c.id));
+  mergeByIdOrKey(merged.cuentas, cloud.cuentas.filter(c => !merged.deletedCuentas.includes(c.id)), c => `${normalizeKey(c.tipo)}|${normalizeKey(c.nombre)}`, accountIdMap);
   mergeByIdOrKey(merged.categories, cloud.categories, c => `${normalizeKey(c.tipo)}|${normalizeKey(c.nombre)}`);
   const addMergedMovimiento = item => {
     const mov = remapMovimientoAccounts(item, accountIdMap);
@@ -2255,7 +2356,7 @@ async function downloadFromCloud() {
   const { data, error } = await supabaseClient.from('finance_states').select('data, updated_at').eq('user_id', cloudSession.user.id).single();
   if (error) return setCloudText('sync-status', 'No encontre datos en Supabase para este usuario.');
   if (!confirm('Esto reemplaza los datos locales con lo guardado en Supabase. Continuar?')) return;
-  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], categories: [], ...(data.data || {}) };
+  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], deletedCuentas: [], categories: [], ...(data.data || {}) };
   ensureStateShape();
   save();
   refreshAll();
