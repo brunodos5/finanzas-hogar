@@ -151,6 +151,9 @@
   .recurring-item strong { display: block; margin-bottom: 4px; }
   .clickable-card { cursor: pointer; transition: border-color .15s, background .15s; }
   .clickable-card:hover { border-color: var(--border2); background: color-mix(in srgb, var(--surface2) 24%, var(--surface)); }
+  .color-tools { display: grid; gap: 8px; }
+  .color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .swatch { width: 30px; height: 30px; border-radius: 999px; border: 2px solid var(--border2); cursor: pointer; padding: 0; }
   @media (max-width: 900px) {
     .shell { grid-template-columns: 1fr; }
     .sidebar { position: sticky; top: 0; z-index: 10; border-right: 0; border-bottom: 1px solid var(--border); }
@@ -425,7 +428,20 @@
         <label>Nombre<input id="c-nombre" placeholder="Ej: Banco, efectivo, tarjeta"></label>
         <label>Tipo<select id="c-tipo"><option value="efectivo">Efectivo</option><option value="banco">Banco</option><option value="tarjeta">Tarjeta</option><option value="ahorro">Ahorro</option><option value="otro">Otro</option></select></label>
         <label>Saldo inicial<input id="c-saldo" type="number" step="0.01" placeholder="0.00"></label>
-        <label>Color<input id="c-color" type="color" value="#25734b"></label>
+        <label>Color
+          <div class="color-tools">
+            <input id="c-color" type="color" value="#25734b" onchange="setCuentaColor(this.value)">
+            <input id="c-color-text" placeholder="#25734b" oninput="setCuentaColor(this.value, true)">
+            <div class="color-row">
+              <button class="swatch" style="background:#25734b" onclick="setCuentaColor('#25734b')" type="button"></button>
+              <button class="swatch" style="background:#235b9f" onclick="setCuentaColor('#235b9f')" type="button"></button>
+              <button class="swatch" style="background:#b23636" onclick="setCuentaColor('#b23636')" type="button"></button>
+              <button class="swatch" style="background:#916400" onclick="setCuentaColor('#916400')" type="button"></button>
+              <button class="swatch" style="background:#7057a6" onclick="setCuentaColor('#7057a6')" type="button"></button>
+              <button class="swatch" style="background:#0f766e" onclick="setCuentaColor('#0f766e')" type="button"></button>
+            </div>
+          </div>
+        </label>
       </div>
     </div>
     <div class="modal-foot">
@@ -861,18 +877,30 @@ function openCuenta(id) {
   document.getElementById('c-nombre').value = c ? c.nombre : '';
   document.getElementById('c-tipo').value = c ? c.tipo : 'efectivo';
   document.getElementById('c-saldo').value = c ? c.saldoInicial : 0;
-  document.getElementById('c-color').value = c ? c.color : '#25734b';
+  setCuentaColor(c ? c.color : '#25734b');
   document.getElementById('cuenta-delete').classList.toggle('hidden', !c);
   openModal('modal-cuenta');
+}
+function normalizeColor(value) {
+  const raw = String(value || '').trim();
+  const withHash = raw.startsWith('#') ? raw : '#' + raw;
+  return /^#[0-9a-fA-F]{6}$/.test(withHash) ? withHash.toLowerCase() : '';
+}
+function setCuentaColor(value, fromText = false) {
+  const color = normalizeColor(value);
+  if (!fromText || color) document.getElementById('c-color-text').value = color || value;
+  if (color) document.getElementById('c-color').value = color;
 }
 function guardarCuenta() {
   const nombre = document.getElementById('c-nombre').value.trim();
   if (!nombre) return toast('Ingresá un nombre de cuenta.');
+  const color = normalizeColor(document.getElementById('c-color-text').value) || normalizeColor(document.getElementById('c-color').value);
+  if (!color) return toast('Ingresa un color HEX valido, por ejemplo #25734b.');
   const data = {
     nombre,
     tipo: document.getElementById('c-tipo').value,
     saldoInicial: Number(document.getElementById('c-saldo').value || 0),
-    color: document.getElementById('c-color').value
+    color
   };
   if (editingCuentaId) {
     const cuenta = state.cuentas.find(c => c.id === editingCuentaId);
