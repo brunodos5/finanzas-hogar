@@ -27,7 +27,7 @@ Publicar como sitio Vite estatico.
 
 - Build command: `npm run build`
 - Publish directory: `dist`
-- Deploy automatico: los pushes normales se ignoran para ahorrar creditos. Para publicar, el commit debe incluir `[deploy]` en el mensaje.
+- Deploy automatico: los pushes normales se ignoran para ahorrar creditos con `netlify-ignore.cjs`. Para publicar, el commit debe incluir `[deploy]` en el mensaje.
 
 ## PWA
 
