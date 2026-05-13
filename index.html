@@ -172,11 +172,14 @@
       <p class="muted">Ingresa para sincronizar tus datos y usar la app desde cualquier equipo.</p>
     </div>
     <label>Email<input id="auth-email" type="email" placeholder="tu@email.com"></label>
+    <label>Contraseña<input id="auth-password" type="password" autocomplete="current-password" placeholder="Minimo 6 caracteres"></label>
     <div class="actions">
+      <button class="btn primary" onclick="loginWithPassword()">Entrar</button>
+      <button class="btn" onclick="signUpWithPassword()">Crear cuenta</button>
       <button class="btn primary" onclick="sendAuthLoginLink()">Enviar link de acceso</button>
       <button class="btn" onclick="loginWithGitHub()">GitHub</button>
     </div>
-    <div class="status-box" id="auth-status">Te enviamos un link magico para entrar sin contrasena.</div>
+    <div class="status-box" id="auth-status">Crea una cuenta o entra con tu email y contraseña.</div>
   </div>
 </div>
 
@@ -2040,6 +2043,45 @@ async function sendLoginLink() {
 async function sendAuthLoginLink() {
   document.getElementById('cloud-email').value = document.getElementById('auth-email').value;
   return sendLoginLink();
+}
+function getAuthCredentials() {
+  return {
+    email: (document.getElementById('auth-email')?.value || '').trim(),
+    password: document.getElementById('auth-password')?.value || ''
+  };
+}
+async function signUpWithPassword() {
+  await initSupabase();
+  if (!supabaseClient) return setCloudText('auth-status', 'No pude iniciar Supabase.');
+  const { email, password } = getAuthCredentials();
+  if (!email || !password) return setCloudText('auth-status', 'Ingresa email y contraseña.');
+  if (password.length < 6) return setCloudText('auth-status', 'La contraseña debe tener al menos 6 caracteres.');
+  setCloudText('auth-status', 'Creando cuenta...');
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: window.location.href.split('#')[0] }
+  });
+  if (error) return setCloudText('auth-status', 'Error al crear cuenta: ' + error.message);
+  if (data.session) {
+    cloudSession = data.session;
+    updateAuthUI();
+    scheduleCloudSync(800);
+    return;
+  }
+  setCloudText('auth-status', 'Cuenta creada. Revisa tu email para confirmar la cuenta y despues entra con tu contraseña.');
+}
+async function loginWithPassword() {
+  await initSupabase();
+  if (!supabaseClient) return setCloudText('auth-status', 'No pude iniciar Supabase.');
+  const { email, password } = getAuthCredentials();
+  if (!email || !password) return setCloudText('auth-status', 'Ingresa email y contraseña.');
+  setCloudText('auth-status', 'Entrando...');
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) return setCloudText('auth-status', 'No pude entrar: ' + error.message);
+  cloudSession = data.session;
+  updateAuthUI();
+  scheduleCloudSync(800);
 }
 async function loginWithGitHub() {
   const urlInput = document.getElementById('cloud-url')?.value.trim();
