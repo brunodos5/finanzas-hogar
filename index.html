@@ -149,6 +149,8 @@
   .recurring-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
   .recurring-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: color-mix(in srgb, var(--surface2) 35%, transparent); }
   .recurring-item strong { display: block; margin-bottom: 4px; }
+  .clickable-card { cursor: pointer; transition: border-color .15s, background .15s; }
+  .clickable-card:hover { border-color: var(--border2); background: color-mix(in srgb, var(--surface2) 24%, var(--surface)); }
   @media (max-width: 900px) {
     .shell { grid-template-columns: 1fr; }
     .sidebar { position: sticky; top: 0; z-index: 10; border-right: 0; border-bottom: 1px solid var(--border); }
@@ -224,7 +226,7 @@
         </div>
       </div>
       <div class="grid metrics" id="metrics"></div>
-      <div class="card" style="margin-bottom:16px;">
+      <div class="card clickable-card" style="margin-bottom:16px;" onclick="showPage('recurrentes')" role="button" tabindex="0">
         <div class="card-head"><span class="card-title">Gastos recurrentes</span></div>
         <div class="card-body" id="recurring-content"></div>
       </div>
@@ -245,6 +247,27 @@
       <div class="card">
         <div class="card-head"><span class="card-title">Últimos movimientos</span></div>
         <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoría</th><th>Cuenta</th><th class="right">Monto</th></tr></thead><tbody id="recent-body"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-recurrentes">
+      <div class="page-head">
+        <div>
+          <h2>Gastos recurrentes</h2>
+          <p class="muted">Categorias recurrentes del mes, tengan o no movimientos cargados.</p>
+        </div>
+        <div class="actions">
+          <select id="recurring-month" onchange="renderRecurrentesPage()"></select>
+          <button class="btn" onclick="showPage('dashboard')">Volver a inicio</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Categoria</th><th>Mes</th><th>Estado</th><th>Ultimo gasto</th><th class="right">Monto</th></tr></thead>
+            <tbody id="recurrentes-body"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -1578,13 +1601,35 @@ function refreshSelectors() {
   fillMonthSelect(document.getElementById('dash-month'), document.getElementById('dash-month').value || currentMonth(), true);
   fillMonthSelect(document.getElementById('filter-month'), document.getElementById('filter-month').value, true);
   fillMonthSelect(document.getElementById('budget-month'), document.getElementById('budget-month').value || currentMonth());
+  fillRecurringMonthSelect(document.getElementById('recurring-month'), document.getElementById('recurring-month').value || document.getElementById('dash-month').value || currentMonth());
   fillSelect(document.getElementById('filter-cat'), allCategories(), document.getElementById('filter-cat').value, 'Todas las categorías');
+}
+function getRecurringMonths() {
+  const set = new Set(getMonths());
+  const base = new Date(currentMonth() + '-01T00:00:00');
+  for (let offset = -6; offset <= 6; offset++) {
+    const d = new Date(base);
+    d.setMonth(base.getMonth() + offset);
+    set.add(d.toISOString().slice(0, 7));
+  }
+  return [...set].sort();
+}
+function fillRecurringMonthSelect(el, selected) {
+  el.innerHTML = '';
+  getRecurringMonths().forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = monthFmt(m);
+    if (m === selected) opt.selected = true;
+    el.appendChild(opt);
+  });
 }
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('[data-page-btn]').forEach(b => b.classList.toggle('active', b.dataset.pageBtn === id));
   document.getElementById('page-' + id).classList.add('active');
   if (id === 'dashboard') renderDashboard();
+  if (id === 'recurrentes') renderRecurrentesPage();
   if (id === 'movimientos') renderMovimientos();
   if (id === 'cuentas') renderCuentas();
   if (id === 'presupuesto') renderPresupuesto();
@@ -1692,17 +1737,47 @@ function renderRecurrentes(movs, month) {
     el.innerHTML = '<div class="empty">Marca categorias de gasto como recurrentes para verlas aca.</div>';
     return;
   }
-  el.innerHTML = `<div class="recurring-grid">${recurrentes.map(cat => {
+  const totalMes = recurrentes.reduce((sum, cat) => {
+    return sum + movs.filter(m => m.tipo === 'gasto' && m.categoria === cat.nombre).reduce((s, m) => s + m.monto, 0);
+  }, 0);
+  el.innerHTML = `<div class="budget-row"><strong>${recurrentes.length} categorias recurrentes</strong><span class="muted">${month ? monthFmt(month) : 'Todos los meses'} · ${money(totalMes)}</span></div>
+  <div class="recurring-grid">${recurrentes.slice(0, 4).map(cat => {
     const rows = movs.filter(m => m.tipo === 'gasto' && m.categoria === cat.nombre);
     const total = rows.reduce((sum, m) => sum + m.monto, 0);
-    const last = rows.slice().sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')))[0];
     return `<div class="recurring-item">
       <strong>${cat.nombre}</strong>
-      <span class="muted">${month ? monthFmt(month) : 'Todos los meses'}</span>
       <div class="red" style="font-weight:700;margin-top:6px;">${money(total)}</div>
-      <small class="muted">${rows.length ? `${rows.length} gasto${rows.length === 1 ? '' : 's'}${last ? ' · ultimo ' + dateFmt(last.fecha) : ''}` : 'Sin gastos registrados'}</small>
+      <small class="muted">${rows.length ? `${rows.length} gasto${rows.length === 1 ? '' : 's'}` : 'Sin gasto este mes'}</small>
     </div>`;
-  }).join('')}</div>`;
+  }).join('')}</div>
+  <p class="muted" style="margin-top:10px;">Clic para ver todos los recurrentes.</p>`;
+}
+function recurrentRowsForMonth(month) {
+  return getCategories('gasto').filter(c => c.recurrente).map(cat => {
+    const rows = state.movimientos.filter(m => m.tipo === 'gasto' && m.categoria === cat.nombre && (!month || (m.fecha || '').startsWith(month)));
+    const total = rows.reduce((sum, m) => sum + m.monto, 0);
+    const last = rows.slice().sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')))[0];
+    return { cat, rows, total, last };
+  });
+}
+function renderRecurrentesPage() {
+  refreshSelectors();
+  const month = document.getElementById('recurring-month').value || currentMonth();
+  const items = recurrentRowsForMonth(month);
+  const body = document.getElementById('recurrentes-body');
+  if (!items.length) {
+    body.innerHTML = '<tr><td colspan="5"><div class="empty">Todavia no marcaste categorias de gasto como recurrentes.</div></td></tr>';
+    return;
+  }
+  body.innerHTML = items.map(({ cat, rows, total, last }) => `
+    <tr>
+      <td><strong>${cat.nombre}</strong></td>
+      <td>${monthFmt(month)}</td>
+      <td><span class="badge ${rows.length ? 'green' : 'gray'}">${rows.length ? `${rows.length} registrado${rows.length === 1 ? '' : 's'}` : 'Pendiente'}</span></td>
+      <td>${last ? `${dateFmt(last.fecha)} · ${last.desc || cat.nombre}` : '-'}</td>
+      <td class="right red"><strong>${money(total)}</strong></td>
+    </tr>
+  `).join('');
 }
 function renderRows(tbody, movs, withActions = true) {
   if (!movs.length) {
