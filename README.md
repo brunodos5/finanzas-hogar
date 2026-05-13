@@ -33,12 +33,14 @@ Publicar como sitio Vite estatico.
 
 La app es instalable en Android desde Chrome. `vite-plugin-pwa` genera el manifest y el service worker durante el build. Los iconos fuente estan en `public/icons/`.
 
-Para usar IA con OpenAI en Netlify:
+Para usar IA con Netlify AI Gateway:
 
-1. En Netlify, ir a Site configuration > Environment variables.
-2. Agregar `OPENAI_API_KEY` con tu clave de OpenAI.
-3. Opcional: agregar `OPENAI_MODEL` si queres cambiar el modelo. Si no, usa `gpt-4.1-mini`.
+1. En Netlify, habilitar AI Gateway para el sitio.
+2. Netlify configura `OPENAI_BASE_URL` automaticamente.
+3. Opcional: agregar `OPENAI_MODEL` si queres cambiar el modelo. Si no, usa `gpt-4o-mini`.
 4. Volver a desplegar el sitio.
+
+La app tambien acepta `OPENAI_API_KEY` si algun dia queres usar OpenAI directo, pero no es obligatorio con AI Gateway.
 
 La app llama a:
 

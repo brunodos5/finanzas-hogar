@@ -1,5 +1,6 @@
-const OPENAI_URL = 'https://api.openai.com/v1/responses';
-const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-5.2';
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+const OPENAI_URL = `${OPENAI_BASE_URL.replace(/\/$/, '')}/responses`;
+const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 function json(statusCode, body) {
   return {
@@ -14,22 +15,25 @@ function json(statusCode, body) {
   };
 }
 
-function requireOpenAIKey() {
-  if (!process.env.OPENAI_API_KEY) {
-    const err = new Error('Missing OPENAI_API_KEY');
+function getOpenAIHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  if (process.env.OPENAI_API_KEY) headers.Authorization = `Bearer ${process.env.OPENAI_API_KEY}`;
+  return headers;
+}
+
+function requireOpenAIAccess() {
+  if (!process.env.OPENAI_BASE_URL && !process.env.OPENAI_API_KEY) {
+    const err = new Error('Enable Netlify AI Gateway or set OPENAI_API_KEY');
     err.statusCode = 500;
     throw err;
   }
 }
 
 async function callOpenAI(input, schemaName, schema) {
-  requireOpenAIKey();
+  requireOpenAIAccess();
   const res = await fetch(OPENAI_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
-    },
+    headers: getOpenAIHeaders(),
     body: JSON.stringify({
       model: DEFAULT_MODEL,
       input,
