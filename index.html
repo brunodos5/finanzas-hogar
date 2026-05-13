@@ -900,7 +900,8 @@ function guardarCuenta() {
     nombre,
     tipo: document.getElementById('c-tipo').value,
     saldoInicial: Number(document.getElementById('c-saldo').value || 0),
-    color
+    color,
+    updatedAt: new Date().toISOString()
   };
   if (editingCuentaId) {
     const cuenta = state.cuentas.find(c => c.id === editingCuentaId);
@@ -1391,6 +1392,11 @@ function setCloudText(id, msg) {
 function normalizeKey(value) {
   return String(value || '').trim().toLowerCase();
 }
+function itemUpdatedAt(item) {
+  const value = item?.updatedAt || item?.updated_at || '';
+  const time = value ? Date.parse(value) : 0;
+  return Number.isFinite(time) ? time : 0;
+}
 function normalizeFinanceState(data) {
   return {
     cuentas: Array.isArray(data?.cuentas) ? data.cuentas : [],
@@ -1408,7 +1414,9 @@ function mergeByIdOrKey(target, source, getKey, idMap) {
     const existing = byId || byKey;
     if (existing) {
       if (item.id && existing.id && idMap) idMap[item.id] = existing.id;
-      Object.assign(existing, { ...item, id: existing.id });
+      const incomingTime = itemUpdatedAt(item);
+      const existingTime = itemUpdatedAt(existing);
+      if (!existingTime || incomingTime >= existingTime) Object.assign(existing, { ...item, id: existing.id });
     } else {
       target.push({ ...item, id: item.id || uid() });
     }
