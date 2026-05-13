@@ -144,6 +144,11 @@
   .auth-card h1 { font: 700 26px/1.1 Georgia, serif; }
   .category-list { display: grid; gap: 8px; }
   .category-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; border-top: 1px solid var(--border); padding: 10px 0; }
+  .check-row { display: flex; align-items: center; gap: 8px; padding-top: 4px; }
+  .check-row input { width: auto; }
+  .recurring-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .recurring-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: color-mix(in srgb, var(--surface2) 35%, transparent); }
+  .recurring-item strong { display: block; margin-bottom: 4px; }
   @media (max-width: 900px) {
     .shell { grid-template-columns: 1fr; }
     .sidebar { position: sticky; top: 0; z-index: 10; border-right: 0; border-bottom: 1px solid var(--border); }
@@ -216,6 +221,10 @@
         </div>
       </div>
       <div class="grid metrics" id="metrics"></div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-head"><span class="card-title">Gastos recurrentes</span></div>
+        <div class="card-body" id="recurring-content"></div>
+      </div>
       <div class="grid two-col">
         <div class="card">
           <div class="card-head"><span class="card-title">Gastos por categoría</span></div>
@@ -412,6 +421,7 @@
       <div class="form-grid">
         <label>Nombre<input id="cat-nombre" placeholder="Ej: Sueldo, Supermercado"></label>
         <label>Tipo<select id="cat-tipo"><option value="ingreso">Ingreso</option><option value="gasto">Gasto</option></select></label>
+        <label class="check-row"><input id="cat-recurrente" type="checkbox"> Gasto recurrente</label>
       </div>
     </div>
     <div class="modal-foot">
@@ -1654,6 +1664,7 @@ function renderDashboard() {
     <div class="metric"><span>Resultado</span><strong class="${resultado >= 0 ? 'green' : 'red'}">${money(resultado)}</strong></div>
     <div class="metric"><span>Balance total</span><strong>${money(totalBalance())}</strong></div>
   `;
+  renderRecurrentes(movs, month);
   renderChartCat(movs);
   renderChartIncomeCat(movs);
   renderChartMonths();
@@ -1670,6 +1681,25 @@ function renderChartIncomeCat(movs) {
     data: { labels, datasets: [{ label: 'Ingresos', data, backgroundColor: '#25734b55', borderColor: '#25734b', borderWidth: 1 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => '$' + Number(v).toLocaleString('es-UY') } } } }
   });
+}
+function renderRecurrentes(movs, month) {
+  const el = document.getElementById('recurring-content');
+  const recurrentes = getCategories('gasto').filter(c => c.recurrente);
+  if (!recurrentes.length) {
+    el.innerHTML = '<div class="empty">Marca categorias de gasto como recurrentes para verlas aca.</div>';
+    return;
+  }
+  el.innerHTML = `<div class="recurring-grid">${recurrentes.map(cat => {
+    const rows = movs.filter(m => m.tipo === 'gasto' && m.categoria === cat.nombre);
+    const total = rows.reduce((sum, m) => sum + m.monto, 0);
+    const last = rows.slice().sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')))[0];
+    return `<div class="recurring-item">
+      <strong>${cat.nombre}</strong>
+      <span class="muted">${month ? monthFmt(month) : 'Todos los meses'}</span>
+      <div class="red" style="font-weight:700;margin-top:6px;">${money(total)}</div>
+      <small class="muted">${rows.length ? `${rows.length} gasto${rows.length === 1 ? '' : 's'}${last ? ' · ultimo ' + dateFmt(last.fecha) : ''}` : 'Sin gastos registrados'}</small>
+    </div>`;
+  }).join('')}</div>`;
 }
 function renderRows(tbody, movs, withActions = true) {
   if (!movs.length) {
@@ -1699,12 +1729,14 @@ function openCategoria(id) {
   document.getElementById('categoria-title').textContent = cat ? 'Editar categoria' : 'Nueva categoria';
   document.getElementById('cat-nombre').value = cat ? cat.nombre : '';
   document.getElementById('cat-tipo').value = cat ? cat.tipo : 'gasto';
+  document.getElementById('cat-recurrente').checked = Boolean(cat?.recurrente);
   document.getElementById('categoria-delete').classList.toggle('hidden', !cat);
   openModal('modal-categoria');
 }
 function guardarCategoria() {
   const nombre = document.getElementById('cat-nombre').value.trim();
   const tipo = document.getElementById('cat-tipo').value;
+  const recurrente = tipo === 'gasto' && document.getElementById('cat-recurrente').checked;
   if (!nombre) return toast('Ingresa un nombre de categoria.');
   const duplicate = state.categories.find(c => c.id !== editingCategoriaId && c.tipo === tipo && normalizeKey(c.nombre) === normalizeKey(nombre));
   if (duplicate) return toast('Esa categoria ya existe.');
@@ -1712,10 +1744,10 @@ function guardarCategoria() {
     const cat = state.categories.find(c => c.id === editingCategoriaId);
     const oldName = cat.nombre;
     const oldType = cat.tipo;
-    Object.assign(cat, { nombre, tipo });
+    Object.assign(cat, { nombre, tipo, recurrente });
     state.movimientos.forEach(m => { if (m.tipo === oldType && m.categoria === oldName) { m.categoria = nombre; m.concepto = nombre; } });
     state.presupuestos.forEach(p => { if (p.categoria === oldName) { p.categoria = nombre; p.key = `${p.mes}_${nombre}`; } });
-  } else state.categories.push({ id: uid(), nombre, tipo });
+  } else state.categories.push({ id: uid(), nombre, tipo, recurrente });
   save();
   closeModal('modal-categoria');
   refreshAll();
@@ -1741,7 +1773,7 @@ function renderCategorias() {
       el.innerHTML = '<div class="empty">Sin categorias todavia.</div>';
       return;
     }
-    el.innerHTML = cats.map(cat => `<div class="category-row"><strong>${cat.nombre}</strong><button class="btn sm" onclick="openCategoria('${cat.id}')">Editar</button><button class="btn sm danger" onclick="openCategoria('${cat.id}');eliminarCategoria()">Eliminar</button></div>`).join('');
+    el.innerHTML = cats.map(cat => `<div class="category-row"><strong>${cat.nombre}${cat.recurrente ? ' <span class="badge red">recurrente</span>' : ''}</strong><button class="btn sm" onclick="openCategoria('${cat.id}')">Editar</button><button class="btn sm danger" onclick="openCategoria('${cat.id}');eliminarCategoria()">Eliminar</button></div>`).join('');
   });
 }
 function openPresupuesto() {
@@ -1947,7 +1979,7 @@ function exportExcel() {
   });
   const cuentas = state.cuentas.map(c => ({ Nombre: c.nombre, Tipo: c.tipo, SaldoInicial: c.saldoInicial, SaldoActual: calcCuenta(c.id) }));
   const presupuestos = state.presupuestos.map(p => ({ Mes: p.mes, Categoria: p.categoria, Monto: p.monto }));
-  const categorias = state.categories.map(c => ({ Nombre: c.nombre, Tipo: c.tipo }));
+  const categorias = state.categories.map(c => ({ Nombre: c.nombre, Tipo: c.tipo, Recurrente: c.recurrente ? 'Si' : 'No' }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(movimientos), 'Movimientos');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cuentas), 'Cuentas');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(presupuestos), 'Presupuestos');
