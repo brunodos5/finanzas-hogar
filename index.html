@@ -2043,12 +2043,47 @@ function applyReceiptResult(result) {
   document.getElementById('receipt-form').classList.remove('hidden');
   document.getElementById('receipt-save').classList.remove('hidden');
 }
+function applyLocalReceiptResult({ text, fileName }) {
+  const amount = Math.abs(bestAmountFromText(text) || 0);
+  const date = parseDateValue(text) || today();
+  const lines = String(text || '').split(/\n+/).map(s => s.trim()).filter(s => s.length > 3);
+  const desc = lines.find(l => !parseDateValue(l) && parseMoney(l) === null) || String(fileName || '').replace(/\.[^.]+$/, '');
+  const categoria = categoryForDescription(desc + ' ' + text, 'gasto');
+  lastReceiptSuggestion = { desc, categoria };
+  document.getElementById('r-categoria').value = categoria;
+  document.getElementById('r-desc').value = desc.slice(0, 80);
+  document.getElementById('r-monto').value = amount ? amount.toFixed(2) : '';
+  document.getElementById('r-fecha').value = date;
+  document.getElementById('r-notas').value = 'Cargado con OCR';
+  document.getElementById('receipt-form').classList.remove('hidden');
+  document.getElementById('receipt-save').classList.remove('hidden');
+  return { amount, desc, categoria, textLength: String(text || '').trim().length };
+}
+async function readReceiptText(file) {
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) return readPDFText(file);
+  if (!window.Tesseract) return '';
+  setStatus('receipt-status', 'Reconociendo texto con OCR. Puede tardar unos segundos...');
+  const result = await Tesseract.recognize(file, 'spa+eng');
+  return result.data.text || '';
+}
 async function handleReceiptFile(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const aiConcepts = getCategories().map(c => ({ nombre: c.nombre, tipo: c.tipo, categoria: c.nombre }));
   try {
-    setStatus('receipt-status', 'Analizando comprobante con IA...');
+    setStatus('receipt-status', 'Leyendo comprobante con OCR...');
+    const text = await readReceiptText(file);
+    const local = applyLocalReceiptResult({ text, fileName: file.name });
+    if (local.amount && local.textLength >= 12) {
+      setStatus('receipt-status', 'OCR listo. Revisa los datos y guardalos.');
+      return;
+    }
+    setStatus('receipt-status', 'OCR incompleto. Probando IA solo para completar datos...');
+  } catch (ocrErr) {
+    console.warn('OCR no disponible, probando IA', ocrErr);
+    setStatus('receipt-status', 'No pude leer bien con OCR. Probando IA...');
+  }
+  try {
+    const aiConcepts = getCategories().map(c => ({ nombre: c.nombre, tipo: c.tipo, categoria: c.nombre }));
     const aiResult = await postJSON('/.netlify/functions/analyze-receipt', {
       file: { name: file.name, type: file.type || 'image/jpeg', data: await fileToBase64(file) },
       concepts: aiConcepts,
@@ -2057,34 +2092,8 @@ async function handleReceiptFile(event) {
     });
     applyReceiptResult(aiResult);
     setStatus('receipt-status', 'IA lista. Revisa los datos y guardalos.');
-    return;
   } catch (aiErr) {
-    console.warn('IA no disponible, usando lectura local', aiErr);
-  }
-  try {
-    setStatus('receipt-status', 'Leyendo comprobante...');
-    let text = '';
-    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) text = await readPDFText(file);
-    else if (window.Tesseract) {
-      setStatus('receipt-status', 'Reconociendo texto de la foto. Puede tardar unos segundos...');
-      const result = await Tesseract.recognize(file, 'spa+eng');
-      text = result.data.text || '';
-    }
-    const amount = Math.abs(bestAmountFromText(text) || 0);
-    const date = parseDateValue(text) || today();
-    const lines = text.split(/\n+/).map(s => s.trim()).filter(s => s.length > 3);
-    const desc = lines.find(l => !parseDateValue(l) && parseMoney(l) === null) || file.name.replace(/\.[^.]+$/, '');
-    const categoria = categoryForDescription(desc + ' ' + text, 'gasto');
-    lastReceiptSuggestion = { desc, categoria };
-    document.getElementById('r-categoria').value = categoria;
-    document.getElementById('r-desc').value = desc.slice(0, 80);
-    document.getElementById('r-monto').value = amount ? amount.toFixed(2) : '';
-    document.getElementById('r-fecha').value = date;
-    document.getElementById('r-notas').value = 'Cargado desde comprobante';
-    document.getElementById('receipt-form').classList.remove('hidden');
-    document.getElementById('receipt-save').classList.remove('hidden');
-    setStatus('receipt-status', amount ? 'Datos detectados. Revisalos y guardalos.' : 'No pude detectar el monto con seguridad. Completalo manualmente y guardalo.');
-  } catch (err) {
+    console.warn('IA no disponible', aiErr);
     setStatus('receipt-status', 'No pude leer el comprobante. Proba con una foto mas clara o carga los datos manualmente.');
   }
 }
@@ -2170,30 +2179,34 @@ async function handleBankFile(event) {
     else if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) rows = (await readPDFText(file)).split(/\n+/).map(line => [line]);
     else throw new Error('Formato no soportado');
     const rawText = rows.map(row => row.join(' | ')).join('\n');
-    try {
-      setStatus('bank-status', 'Analizando movimientos con IA...');
-      const aiResult = await postJSON('/.netlify/functions/analyze-bank-statement', {
-        fileName: file.name,
-        text: rawText,
-        concepts: getCategories().map(c => ({ nombre: c.nombre, tipo: c.tipo, categoria: c.nombre })),
-        learningRules: aiTrainingExamples(),
-        defaultType: document.getElementById('bank-default-type').value
-      });
-      bankImportRows = (aiResult.movimientos || []).map(m => {
-        const tipo = m.tipo || 'gasto';
-        const fallback = categoryForDescription(`${m.desc || ''} ${m.concepto || ''}`, tipo);
-        return {
-          tipo,
-          categoria: categoryNames(tipo).includes(m.categoria) ? m.categoria : fallback,
-          desc: m.desc || m.concepto || fallback,
-          monto: Math.abs(Number(m.monto) || 0),
-          fecha: parseDateValue(m.fecha) || today(),
-          notas: m.notas || 'Importado con IA'
-        };
-      }).filter(m => m.monto > 0);
-    } catch (aiErr) {
-      console.warn('IA no disponible, usando parser local', aiErr);
-      bankImportRows = parseBankMovements(rows, document.getElementById('bank-default-type').value);
+    bankImportRows = parseBankMovements(rows, document.getElementById('bank-default-type').value);
+    if (!bankImportRows.length && rawText.trim().length >= 10) {
+      setStatus('bank-status', 'Parser local sin resultados. Probando IA...');
+      try {
+        const aiResult = await postJSON('/.netlify/functions/analyze-bank-statement', {
+          fileName: file.name,
+          text: rawText,
+          concepts: getCategories().map(c => ({ nombre: c.nombre, tipo: c.tipo, categoria: c.nombre })),
+          learningRules: aiTrainingExamples(),
+          defaultType: document.getElementById('bank-default-type').value
+        });
+        bankImportRows = (aiResult.movimientos || []).map(m => {
+          const tipo = m.tipo || 'gasto';
+          const fallback = categoryForDescription(`${m.desc || ''} ${m.concepto || ''}`, tipo);
+          return {
+            tipo,
+            categoria: categoryNames(tipo).includes(m.categoria) ? m.categoria : fallback,
+            desc: m.desc || m.concepto || fallback,
+            monto: Math.abs(Number(m.monto) || 0),
+            fecha: parseDateValue(m.fecha) || today(),
+            notas: m.notas || 'Importado con IA'
+          };
+        }).filter(m => m.monto > 0);
+      } catch (aiErr) {
+        console.warn('IA no disponible para estado bancario', aiErr);
+      }
+    } else if (bankImportRows.length) {
+      setStatus('bank-status', 'Parser local listo. Revisa la vista previa antes de importar.');
     }
     renderBankPreview();
     setStatus('bank-status', `${bankImportRows.length} movimientos detectados. Revisa la vista previa antes de importar.`);
