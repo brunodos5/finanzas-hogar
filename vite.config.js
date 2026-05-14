@@ -36,19 +36,7 @@ export default defineConfig({
       workbox: {
         navigateFallback: '/index.html',
         globPatterns: ['**/*.{html,js,css,png,svg,ico,json,webmanifest}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)\//,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'external-cdn',
-              expiration: {
-                maxEntries: 20,
-                maxAgeSeconds: 60 * 60 * 24 * 30
-              }
-            }
-          }
-        ]
+        runtimeCaching: []
       }
     })
   ]

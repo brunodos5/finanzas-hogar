@@ -11,11 +11,11 @@
 <title>Finanzas Casa</title>
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/vendor/chart.umd.js"></script>
+<script src="/vendor/xlsx.full.min.js"></script>
+<script src="/vendor/pdf.min.js"></script>
+<script src="/vendor/tesseract.min.js"></script>
+<script src="/vendor/supabase-js.js"></script>
 <style>
   :root {
     --bg: #f6f4ef;
@@ -533,7 +533,10 @@
               <button class="btn primary" onclick="uploadToCloud()">Subir a Supabase</button>
               <button class="btn" onclick="downloadFromCloud()">Bajar de Supabase</button>
               <button class="btn" onclick="exportExcel()">Descargar Excel</button>
+              <button class="btn" onclick="exportEncryptedBackup()">Backup seguro</button>
+              <button class="btn" onclick="document.getElementById('secure-backup-file').click()">Restaurar backup</button>
             </div>
+            <input id="secure-backup-file" class="hidden" type="file" accept=".fincasa,.json,application/json" onchange="importEncryptedBackup(event)">
             <div class="status-box" id="sync-status">Esperando accion.</div>
           </div>
         </div>
@@ -1620,7 +1623,7 @@ async function handleReceiptFile(event) {
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) text = await readPDFText(file);
     else if (window.Tesseract) {
       setStatus('receipt-status', 'Reconociendo texto de la foto. Puede tardar unos segundos...');
-      const result = await Tesseract.recognize(file, 'spa+eng');
+      const result = await Tesseract.recognize(file, 'spa+eng', { workerPath: '/vendor/tesseract-worker.min.js' });
       text = result.data.text || '';
     }
     const amount = Math.abs(bestAmountFromText(text) || 0);
@@ -2726,7 +2729,7 @@ async function readReceiptText(file) {
   if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) return readPDFText(file);
   if (!window.Tesseract) return '';
   setStatus('receipt-status', 'Reconociendo texto con OCR. Puede tardar unos segundos...');
-  const result = await Tesseract.recognize(file, 'spa+eng');
+  const result = await Tesseract.recognize(file, 'spa+eng', { workerPath: '/vendor/tesseract-worker.min.js' });
   return result.data.text || '';
 }
 async function handleReceiptFile(event) {
@@ -3084,6 +3087,90 @@ function exportExcel() {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categorias), 'Categorias');
   XLSX.writeFile(wb, `finanzas_hogar_${today()}.xlsx`);
 }
+function bytesToBase64(bytes) {
+  let binary = '';
+  bytes.forEach(byte => binary += String.fromCharCode(byte));
+  return btoa(binary);
+}
+function base64ToBytes(value) {
+  return Uint8Array.from(atob(value), char => char.charCodeAt(0));
+}
+async function deriveBackupKey(password, salt) {
+  const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 210000, hash: 'SHA-256' },
+    material,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+async function encryptBackupData(data, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveBackupKey(password, salt);
+  const plain = new TextEncoder().encode(JSON.stringify(data));
+  const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plain));
+  return {
+    version: 1,
+    app: 'finanzas-casa',
+    createdAt: new Date().toISOString(),
+    kdf: { name: 'PBKDF2', iterations: 210000, hash: 'SHA-256' },
+    cipher: 'AES-GCM',
+    salt: bytesToBase64(salt),
+    iv: bytesToBase64(iv),
+    data: bytesToBase64(cipher)
+  };
+}
+async function decryptBackupData(backup, password) {
+  if (backup?.app !== 'finanzas-casa' || backup?.version !== 1) throw new Error('Backup invalido.');
+  const salt = base64ToBytes(backup.salt);
+  const iv = base64ToBytes(backup.iv);
+  const cipher = base64ToBytes(backup.data);
+  const key = await deriveBackupKey(password, salt);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher);
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+async function exportEncryptedBackup() {
+  if (IS_DEMO) return toast('El demo no guarda backups.');
+  const password = prompt('Clave para cifrar el backup. Guardala bien: no se puede recuperar.');
+  if (!password) return;
+  if (password.length < 8) return toast('Usa una clave de al menos 8 caracteres.');
+  const confirmPassword = prompt('Repeti la clave del backup.');
+  if (password !== confirmPassword) return toast('Las claves no coinciden.');
+  try {
+    const backup = await encryptBackupData(state, password);
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `finanzas_casa_backup_${today()}.fincasa`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Backup seguro descargado');
+  } catch (err) {
+    toast('No pude crear el backup: ' + err.message);
+  }
+}
+async function importEncryptedBackup(event) {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  const password = prompt('Clave del backup.');
+  if (!password) return;
+  try {
+    const backup = JSON.parse(await file.text());
+    const restored = await decryptBackupData(backup, password);
+    const normalized = normalizeFinanceState(restored);
+    if (!confirm('Esto reemplaza los datos locales actuales por el backup. Continuar?')) return;
+    state = { ...state, ...normalized };
+    ensureStateShape();
+    save();
+    refreshAll();
+    toast('Backup restaurado');
+  } catch (err) {
+    toast('No pude restaurar el backup. Revisa la clave o el archivo.');
+  }
+}
 function movimientoExportRow(m) {
   const cuenta = state.cuentas.find(c => c.id === m.cuentaId);
   const destino = state.cuentas.find(c => c.id === m.cuentaDestId);
@@ -3396,7 +3483,7 @@ function refreshAll() {
 }
 
 if (window.pdfjsLib) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdf.worker.min.js';
 }
 load();
 restoreAppSession();
