@@ -190,6 +190,9 @@
   .summary-table .summary-total td { font-weight: 700; }
   .summary-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; margin-right: 8px; background: var(--green); }
   .summary-dot.gasto { background: var(--red); }
+  .summary-value-btn { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0; text-align: right; font: inherit; font-weight: inherit; }
+  .summary-value-btn:hover { text-decoration: underline; }
+  .btn.active-filter { background: var(--green-bg); color: var(--green); border-color: color-mix(in srgb, var(--green) 42%, var(--border)); font-weight: 700; }
   @media (max-width: 900px) {
     .shell { grid-template-columns: 230px 1fr; }
     .shell.sidebar-collapsed { grid-template-columns: 64px 1fr; }
@@ -415,7 +418,7 @@
           <select id="summary-year" onchange="renderResumen()"></select>
           <select id="summary-mode" onchange="renderResumen()"><option value="resumen">Resumen real</option><option value="presupuesto">Presupuesto</option></select>
           <select id="summary-group" onchange="renderResumen()"></select>
-          <label class="check-row"><input id="summary-hide-empty" type="checkbox" onchange="renderResumen()"> Ocultar sin importes</label>
+          <button class="btn" id="summary-nonzero-btn" onclick="toggleSummaryNonZero()">Solo con saldo</button>
           <button class="btn" onclick="exportCurrentViewExcel()">Excel</button>
         </div>
       </div>
@@ -659,6 +662,16 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="modal-summary-detail">
+  <div class="modal wide">
+    <div class="modal-head"><strong id="summary-detail-title">Detalle</strong><button class="btn sm" onclick="closeModal('modal-summary-detail')">Cerrar</button></div>
+    <div class="modal-body" id="summary-detail-body"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-summary-detail')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -695,6 +708,7 @@ let chartMonths = null;
 let bankImportRows = [];
 let lastReceiptSuggestion = null;
 let selectedMovimientoIds = new Set();
+let summaryOnlyWithBalance = false;
 
 function unique(values) {
   return [...new Set(values.map(v => String(v || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
@@ -1184,6 +1198,15 @@ function summaryMatrixValue(cat, month, mode) {
     .filter(m => m.tipo === cat.tipo && m.categoria === cat.nombre && (m.fecha || '').startsWith(month))
     .reduce((sum, m) => sum + m.monto, 0);
 }
+function summaryDetailItems(catName, tipo, month, mode) {
+  if (mode === 'presupuesto' && tipo === 'gasto') {
+    const budget = state.presupuestos.find(p => p.categoria === catName && p.mes === month);
+    return budget ? [{ kind: 'budget', fecha: month, desc: 'Presupuesto mensual', categoria: catName, monto: budget.monto }] : [];
+  }
+  return state.movimientos
+    .filter(m => m.tipo === tipo && m.categoria === catName && (m.fecha || '').startsWith(month))
+    .sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || '')));
+}
 function summaryRowsForYear(year, mode, group, hideEmpty) {
   const used = state.movimientos
     .filter(m => (m.fecha || '').startsWith(String(year)))
@@ -1210,8 +1233,11 @@ function renderResumen() {
   const year = document.getElementById('summary-year').value || String(new Date().getFullYear());
   const mode = document.getElementById('summary-mode').value || 'resumen';
   const group = document.getElementById('summary-group').value;
-  const hideEmpty = document.getElementById('summary-hide-empty').checked;
+  const hideEmpty = summaryOnlyWithBalance;
   const rows = summaryRowsForYear(year, mode, group, hideEmpty);
+  const filterBtn = document.getElementById('summary-nonzero-btn');
+  filterBtn.classList.toggle('active-filter', summaryOnlyWithBalance);
+  filterBtn.textContent = summaryOnlyWithBalance ? 'Mostrando solo con saldo' : 'Solo con saldo';
   const monthHeaders = SUMMARY_MONTHS.map(m => `<th class="month-cell">${m}</th>`).join('');
   document.getElementById('summary-head').innerHTML = `<tr><th class="concept-cell">Concepto</th>${monthHeaders}<th class="total-cell">Total</th></tr>`;
   if (!rows.length) {
@@ -1220,7 +1246,10 @@ function renderResumen() {
   }
   const renderRow = row => `<tr>
     <td class="concept-cell"><span class="summary-dot ${row.tipo}"></span>${esc(row.nombre)}<br><small class="muted">${esc(row.grupo)}</small></td>
-    ${row.values.map(v => `<td class="month-cell ${row.tipo === 'ingreso' ? 'green' : 'red'}">${v ? money(v) : '-'}</td>`).join('')}
+    ${row.values.map((v, i) => {
+      const month = `${year}-${String(i + 1).padStart(2, '0')}`;
+      return `<td class="month-cell ${row.tipo === 'ingreso' ? 'green' : 'red'}">${v ? `<button class="summary-value-btn" onclick="openSummaryDetail('${encodeURIComponent(row.nombre)}','${row.tipo}','${month}')">${money(v)}</button>` : '-'}</td>`;
+    }).join('')}
     <td class="total-cell ${row.tipo === 'ingreso' ? 'green' : 'red'}">${money(row.total)}</td>
   </tr>`;
   const incomeRows = rows.filter(r => r.tipo === 'ingreso');
@@ -1243,6 +1272,40 @@ function renderResumen() {
     ${totalLine('Saldo mensual', balances, balances.reduce((s, v) => s + v, 0) >= 0 ? 'blue' : 'red')}
     ${totalLine('Acumulado', accumulated, accumulated.at(-1) >= 0 ? 'blue' : 'red')}
   `;
+}
+function toggleSummaryNonZero() {
+  summaryOnlyWithBalance = !summaryOnlyWithBalance;
+  renderResumen();
+}
+function openSummaryDetail(catName, tipo, month) {
+  catName = decodeURIComponent(catName);
+  const mode = document.getElementById('summary-mode').value || 'resumen';
+  const items = summaryDetailItems(catName, tipo, month, mode);
+  document.getElementById('summary-detail-title').textContent = `${catName} · ${monthFmt(month)}`;
+  if (!items.length) {
+    document.getElementById('summary-detail-body').innerHTML = '<div class="empty">No hay movimientos para este importe.</div>';
+    openModal('modal-summary-detail');
+    return;
+  }
+  const total = items.reduce((sum, item) => sum + Number(item.monto || 0), 0);
+  document.getElementById('summary-detail-body').innerHTML = `
+    <div class="status-box" style="margin-top:0;">Total: <strong>${money(total)}</strong> · ${items.length} ${items.length === 1 ? 'registro' : 'registros'}</div>
+    <div class="table-wrap" style="margin-top:12px;">
+      <table>
+        <thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoria</th><th>Cuenta</th><th class="right">Monto</th></tr></thead>
+        <tbody>${items.map(item => {
+          const cuenta = state.cuentas.find(c => c.id === item.cuentaId);
+          return `<tr>
+            <td>${item.kind === 'budget' ? monthFmt(item.fecha) : dateFmt(item.fecha)}</td>
+            <td>${esc(item.desc || item.concepto || item.categoria || '')}</td>
+            <td><span class="badge gray">${esc(item.categoria || '')}</span></td>
+            <td>${cuenta ? esc(cuenta.nombre) : '-'}</td>
+            <td class="right ${tipo === 'ingreso' ? 'green' : 'red'}"><strong>${money(item.monto)}</strong></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+  openModal('modal-summary-detail');
 }
 
 function normalizeText(text) {
@@ -2739,8 +2802,7 @@ function exportCurrentViewExcel() {
     const year = document.getElementById('summary-year').value || String(new Date().getFullYear());
     const mode = document.getElementById('summary-mode').value || 'resumen';
     const group = document.getElementById('summary-group').value;
-    const hideEmpty = document.getElementById('summary-hide-empty').checked;
-    const rows = summaryRowsForYear(year, mode, group, hideEmpty).map(r => ({
+    const rows = summaryRowsForYear(year, mode, group, summaryOnlyWithBalance).map(r => ({
       Tipo: r.tipo,
       Grupo: r.grupo,
       Concepto: r.nombre,
