@@ -216,17 +216,14 @@
   <div class="auth-card">
     <div>
       <h1>Finanzas Casa</h1>
-      <p class="muted">Ingresa para sincronizar tus datos y usar la app desde cualquier equipo.</p>
+      <p class="muted">Ingresa con tu usuario para acceder a Finanzas Casa.</p>
     </div>
-    <label>Email<input id="auth-email" type="email" placeholder="tu@email.com"></label>
-    <label>Contraseña<input id="auth-password" type="password" autocomplete="current-password" placeholder="Minimo 6 caracteres"></label>
+    <label>Usuario<input id="auth-email" autocomplete="username" placeholder="usuario"></label>
+    <label>Contraseña<input id="auth-password" type="password" autocomplete="current-password" placeholder="Contraseña"></label>
     <div class="actions">
       <button class="btn primary" onclick="loginWithPassword()">Entrar</button>
-      <button class="btn" onclick="signUpWithPassword()">Crear cuenta</button>
-      <button class="btn primary" onclick="sendAuthLoginLink()">Enviar link de acceso</button>
-      <button class="btn" onclick="loginWithGitHub()">GitHub</button>
     </div>
-    <div class="status-box" id="auth-status">Crea una cuenta o entra con tu email y contraseña.</div>
+    <div class="status-box" id="auth-status">Ingresa tu usuario y contraseña.</div>
   </div>
 </div>
 
@@ -246,7 +243,8 @@
       <button data-icon="▣" data-page-btn="cuentas" onclick="showPage('cuentas')">Cuentas</button>
       <button data-icon="R" data-page-btn="recurrentes" onclick="showPage('recurrentes')">Recurrentes</button>
       <button data-icon="C" data-page-btn="categorias" onclick="showPage('categorias')">Categorias</button>
-      <button data-icon="N" data-page-btn="nube" onclick="showPage('nube')">Nube</button>
+      <button data-icon="N" data-page-btn="nube" data-admin-only="true" onclick="showPage('nube')">Nube</button>
+      <button data-icon="U" data-page-btn="usuarios" data-admin-only="true" onclick="showPage('usuarios')">Usuarios</button>
       <div class="nav-label">Cargar</div>
       <button data-icon="◉" onclick="openComprobante()">Camara / comprobante</button>
       <button data-icon="⇩" onclick="openImport()">Estado bancario</button>
@@ -513,6 +511,24 @@
         </div>
       </div>
     </section>
+
+    <section class="page" id="page-usuarios">
+      <div class="page-head">
+        <div>
+          <h2>Administrar usuarios</h2>
+          <p class="muted">Crea usuarios y define si entran como administrador o usuario.</p>
+        </div>
+        <button class="btn primary" onclick="openAppUser()">+ Nuevo usuario</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="users-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -610,6 +626,25 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="modal-user">
+  <div class="modal">
+    <div class="modal-head"><strong id="user-title">Nuevo usuario</strong><button class="btn sm" onclick="closeModal('modal-user')">Cerrar</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <label>Usuario<input id="u-username" placeholder="usuario"></label>
+        <label>Rol<select id="u-role"><option value="user">Usuario</option><option value="admin">Administrador</option></select></label>
+        <label>Contraseña<input id="u-password" type="password" placeholder="Dejar vacia para no cambiar"></label>
+        <label class="check-row"><input id="u-active" type="checkbox" checked> Activo</label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger hidden" id="user-delete" onclick="deleteAppUser()">Eliminar</button>
+      <button class="btn" onclick="closeModal('modal-user')">Cancelar</button>
+      <button class="btn primary" onclick="saveAppUser()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modal-comprobante">
   <div class="modal wide">
     <div class="modal-head"><strong>Cargar comprobante</strong><button class="btn sm" onclick="closeModal('modal-comprobante')">Cerrar</button></div>
@@ -680,7 +715,9 @@
 <script>
 const STORAGE_KEY = 'finanzas_hogar_conceptos_v1';
 const CLOUD_CONFIG_KEY = 'finanzas_hogar_supabase_config_v1';
+const APP_USER_SESSION_KEY = 'finanzas_hogar_app_user_v1';
 const IS_DEMO = location.pathname.replace(/\/$/, '') === '/demo' || location.search.includes('demo=1');
+const DEFAULT_ADMIN_HASH = 'dd821402cfc9e94d7619b7bc673b584458cfee8d866fdab75ec4bf12f3d12f56';
 const DEFAULT_CLOUD_CONFIG = {
   url: 'https://mnkkearluehndvkudulc.supabase.co',
   anonKey: 'sb_publishable_ELCFM1JVaSE2tU9M0vs45g_hQZnPAOJ'
@@ -705,6 +742,8 @@ let currentTipo = 'gasto';
 let editingCuentaId = null;
 let editingMovimientoId = null;
 let editingCategoriaId = null;
+let editingUserId = null;
+let currentAppUser = null;
 let chartCat = null;
 let chartGroup = null;
 let chartIncomeCat = null;
@@ -2045,6 +2084,10 @@ function ensureStateShape() {
   if (!Array.isArray(state.deletedCuentas)) state.deletedCuentas = [];
   if (!Array.isArray(state.categories)) state.categories = [];
   if (!Array.isArray(state.aiRules)) state.aiRules = [];
+  if (!Array.isArray(state.appUsers)) state.appUsers = [];
+  if (!state.appUsers.length) {
+    state.appUsers.push({ id: 'admin-bruno', username: 'bruno', role: 'admin', active: true, passwordHash: DEFAULT_ADMIN_HASH });
+  }
 }
 function getCategories(tipo) {
   ensureStateShape();
@@ -2152,6 +2195,35 @@ function save() {
   renderSidebar();
   scheduleCloudSync();
 }
+async function hashPassword(password) {
+  const data = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+  return [...new Uint8Array(data)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function normalizeUsername(value) {
+  return normalizeKey(value).replace(/\s+/g, '');
+}
+function userIsAdmin() {
+  return IS_DEMO || currentAppUser?.role === 'admin';
+}
+function applyRoleVisibility() {
+  document.querySelectorAll('[data-admin-only]').forEach(el => el.classList.toggle('hidden', !userIsAdmin()));
+  if (!userIsAdmin()) {
+    const active = document.querySelector('.page.active')?.id;
+    if (active === 'page-nube' || active === 'page-usuarios') showPage('dashboard');
+  }
+}
+function restoreAppSession() {
+  if (IS_DEMO) return;
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(APP_USER_SESSION_KEY) || 'null');
+    if (!stored) return;
+    const user = state.appUsers.find(u => u.id === stored.id && u.active !== false);
+    if (user) currentAppUser = { id: user.id, username: user.username, role: user.role || 'user' };
+    else sessionStorage.removeItem(APP_USER_SESSION_KEY);
+  } catch {
+    sessionStorage.removeItem(APP_USER_SESSION_KEY);
+  }
+}
 function refreshSelectors() {
   fillMonthSelect(document.getElementById('dash-month'), document.getElementById('dash-month').value || currentMonth(), true);
   fillMonthSelect(document.getElementById('filter-month'), document.getElementById('filter-month').value, true);
@@ -2198,6 +2270,7 @@ function showPage(id) {
   if (id === 'resumen') renderResumen();
   if (id === 'categorias') renderCategorias();
   if (id === 'nube') renderCloud();
+  if (id === 'usuarios') renderUsers();
   if (window.matchMedia('(max-width: 900px)').matches) setSidebarCollapsed(true, false);
 }
 function setSidebarCollapsed(collapsed, remember = true) {
@@ -2221,6 +2294,7 @@ function closeModal(id) {
   if (id === 'modal-cuenta') editingCuentaId = null;
   if (id === 'modal-mov') editingMovimientoId = null;
   if (id === 'modal-categoria') editingCategoriaId = null;
+  if (id === 'modal-user') editingUserId = null;
 }
 function setTipo(tipo, keepValues = false) {
   const currentCategoria = document.getElementById('m-categoria').value;
@@ -2449,6 +2523,63 @@ function renderCategorias() {
     }
     el.innerHTML = cats.map(cat => `<div class="category-row"><strong>${cat.nombre}${cat.grupo ? ` <span class="badge gray">${cat.grupo}</span>` : ''}${cat.recurrente ? ' <span class="badge red">recurrente</span>' : ''}</strong><button class="btn sm" onclick="openCategoria('${cat.id}')">Editar</button><button class="btn sm danger" onclick="openCategoria('${cat.id}');eliminarCategoria()">Eliminar</button></div>`).join('');
   });
+}
+function renderUsers() {
+  if (!userIsAdmin()) return showPage('dashboard');
+  ensureStateShape();
+  const body = document.getElementById('users-body');
+  body.innerHTML = state.appUsers.map(user => `<tr>
+    <td><strong>${esc(user.username)}</strong></td>
+    <td><span class="badge ${user.role === 'admin' ? 'blue' : 'gray'}">${user.role === 'admin' ? 'Administrador' : 'Usuario'}</span></td>
+    <td>${user.active ? '<span class="badge green">activo</span>' : '<span class="badge red">inactivo</span>'}</td>
+    <td class="right"><button class="btn sm" onclick="openAppUser('${user.id}')">Editar</button></td>
+  </tr>`).join('');
+}
+function openAppUser(id) {
+  if (!userIsAdmin()) return toast('Solo administrador.');
+  const user = id ? state.appUsers.find(u => u.id === id) : null;
+  editingUserId = id || null;
+  document.getElementById('user-title').textContent = user ? 'Editar usuario' : 'Nuevo usuario';
+  document.getElementById('u-username').value = user ? user.username : '';
+  document.getElementById('u-role').value = user ? user.role : 'user';
+  document.getElementById('u-password').value = '';
+  document.getElementById('u-active').checked = user ? user.active !== false : true;
+  document.getElementById('user-delete').classList.toggle('hidden', !user || user.username === 'bruno');
+  openModal('modal-user');
+}
+async function saveAppUser() {
+  if (!userIsAdmin()) return toast('Solo administrador.');
+  const username = normalizeUsername(document.getElementById('u-username').value);
+  const role = document.getElementById('u-role').value;
+  const password = document.getElementById('u-password').value;
+  const active = document.getElementById('u-active').checked;
+  if (!username) return toast('Ingresa un usuario.');
+  const duplicate = state.appUsers.find(u => u.id !== editingUserId && normalizeUsername(u.username) === username);
+  if (duplicate) return toast('Ese usuario ya existe.');
+  if (!editingUserId && !password) return toast('Ingresa una contraseña.');
+  let user = editingUserId ? state.appUsers.find(u => u.id === editingUserId) : null;
+  if (!user) {
+    user = { id: uid(), username, role, active, passwordHash: await hashPassword(password) };
+    state.appUsers.push(user);
+  } else {
+    Object.assign(user, { username, role, active });
+    if (password) user.passwordHash = await hashPassword(password);
+  }
+  save();
+  closeModal('modal-user');
+  renderUsers();
+  toast('Usuario guardado');
+}
+function deleteAppUser() {
+  if (!userIsAdmin()) return toast('Solo administrador.');
+  const user = state.appUsers.find(u => u.id === editingUserId);
+  if (!user || user.username === 'bruno') return toast('No se puede eliminar ese usuario.');
+  if (!confirm(`Eliminar usuario ${user.username}?`)) return;
+  state.appUsers = state.appUsers.filter(u => u.id !== editingUserId);
+  save();
+  closeModal('modal-user');
+  renderUsers();
+  toast('Usuario eliminado');
 }
 function openPresupuesto() {
   fillSelect(document.getElementById('p-categoria'), categoryNames('gasto'));
@@ -2945,14 +3076,16 @@ function updateAuthUI() {
     document.body.classList.add('demo-mode');
     document.getElementById('auth-screen')?.classList.add('hidden');
     document.getElementById('app-shell')?.classList.remove('hidden');
+    applyRoleVisibility();
     refreshAll();
     return;
   }
-  const logged = Boolean(cloudSession);
+  const logged = Boolean(currentAppUser);
   document.getElementById('auth-screen')?.classList.toggle('hidden', logged);
   document.getElementById('app-shell')?.classList.toggle('hidden', !logged);
   if (logged) {
-    setCloudText('auth-status', 'Sesion iniciada.');
+    setCloudText('auth-status', `Sesion iniciada como ${currentAppUser.username}.`);
+    applyRoleVisibility();
     refreshAll();
   }
 }
@@ -3009,7 +3142,7 @@ async function sendAuthLoginLink() {
 }
 function getAuthCredentials() {
   return {
-    email: (document.getElementById('auth-email')?.value || '').trim(),
+    email: normalizeUsername(document.getElementById('auth-email')?.value || ''),
     password: document.getElementById('auth-password')?.value || ''
   };
 }
@@ -3035,14 +3168,15 @@ async function signUpWithPassword() {
   setCloudText('auth-status', 'Cuenta creada. Revisa tu email para confirmar la cuenta y despues entra con tu contraseña.');
 }
 async function loginWithPassword() {
-  await initSupabase();
-  if (!supabaseClient) return setCloudText('auth-status', 'No pude iniciar Supabase.');
   const { email, password } = getAuthCredentials();
-  if (!email || !password) return setCloudText('auth-status', 'Ingresa email y contraseña.');
+  if (!email || !password) return setCloudText('auth-status', 'Ingresa usuario y contraseña.');
   setCloudText('auth-status', 'Entrando...');
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) return setCloudText('auth-status', 'No pude entrar: ' + error.message);
-  cloudSession = data.session;
+  ensureStateShape();
+  const passwordHash = await hashPassword(password);
+  const user = state.appUsers.find(u => normalizeUsername(u.username) === email && u.passwordHash === passwordHash && u.active !== false);
+  if (!user) return setCloudText('auth-status', 'Usuario o contraseña incorrectos.');
+  currentAppUser = { id: user.id, username: user.username, role: user.role || 'user' };
+  sessionStorage.setItem(APP_USER_SESSION_KEY, JSON.stringify(currentAppUser));
   updateAuthUI();
   scheduleCloudSync(800);
 }
@@ -3061,6 +3195,8 @@ async function loginWithGitHub() {
   }
 }
 async function signOutCloud() {
+  currentAppUser = null;
+  sessionStorage.removeItem(APP_USER_SESSION_KEY);
   if (!supabaseClient) await initSupabase();
   if (supabaseClient) await supabaseClient.auth.signOut();
   cloudSession = null;
@@ -3075,7 +3211,8 @@ function normalizeFinanceState(data) {
     deletedMovimientos: Array.isArray(data?.deletedMovimientos) ? data.deletedMovimientos : [],
     deletedCuentas: Array.isArray(data?.deletedCuentas) ? data.deletedCuentas : [],
     categories: Array.isArray(data?.categories) ? data.categories : [],
-    aiRules: Array.isArray(data?.aiRules) ? data.aiRules : []
+    aiRules: Array.isArray(data?.aiRules) ? data.aiRules : [],
+    appUsers: Array.isArray(data?.appUsers) ? data.appUsers : []
   };
 }
 function mergeFinanceStates(localData, cloudData) {
@@ -3088,6 +3225,7 @@ function mergeFinanceStates(localData, cloudData) {
     presupuestos: local.presupuestos.map(p => ({ ...p })),
     categories: local.categories.map(c => ({ ...c })),
     aiRules: local.aiRules.map(r => ({ ...r })),
+    appUsers: local.appUsers.map(u => ({ ...u })),
     deletedMovimientos: [...new Set([...local.deletedMovimientos, ...cloud.deletedMovimientos])],
     deletedCuentas: [...new Set([...local.deletedCuentas, ...cloud.deletedCuentas])]
   };
@@ -3105,6 +3243,7 @@ function mergeFinanceStates(localData, cloudData) {
   const budgetKey = p => p.key || `${p.mes}_${p.categoria}`;
   mergeByIdOrKey(merged.presupuestos, cloud.presupuestos.map(p => ({ ...p, key: budgetKey(p) })), budgetKey);
   mergeByIdOrKey(merged.aiRules, cloud.aiRules, r => `${normalizeKey(r.tipo)}|${normalizeKey(r.key)}`);
+  mergeByIdOrKey(merged.appUsers, cloud.appUsers, u => normalizeUsername(u.username));
   return merged;
 }
 async function downloadFromCloud() {
@@ -3113,7 +3252,7 @@ async function downloadFromCloud() {
   const { data, error } = await supabaseClient.from('finance_states').select('data, updated_at').eq('user_id', cloudSession.user.id).single();
   if (error) return setCloudText('sync-status', 'No encontre datos en Supabase para este usuario.');
   if (!confirm('Esto reemplaza los datos locales con lo guardado en Supabase. Continuar?')) return;
-  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], deletedCuentas: [], categories: [], aiRules: [], ...(data.data || {}) };
+  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], deletedCuentas: [], categories: [], aiRules: [], appUsers: [], ...(data.data || {}) };
   ensureStateShape();
   save();
   refreshAll();
@@ -3133,6 +3272,7 @@ if (window.pdfjsLib) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 load();
+restoreAppSession();
 configureSidebar();
 window.addEventListener('resize', configureSidebar);
 refreshSelectors();
