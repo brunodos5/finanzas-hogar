@@ -166,6 +166,12 @@
   .color-tools { display: grid; gap: 8px; }
   .color-row { display: flex; gap: 8px; flex-wrap: wrap; }
   .swatch { width: 30px; height: 30px; border-radius: 999px; border: 2px solid var(--border2); cursor: pointer; padding: 0; }
+  .import-tools { display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr)); gap: 10px; align-items: end; }
+  .import-table input, .import-table select { min-width: 130px; padding: 7px 8px; }
+  .import-table .desc-input { min-width: 230px; }
+  .import-row-ignored { opacity: .48; }
+  .import-summary { display: flex; gap: 10px; flex-wrap: wrap; color: var(--text2); font-size: 12px; margin-top: 10px; }
+  .new-category-box { margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--surface2) 38%, transparent); }
   @media (max-width: 900px) {
     .shell { grid-template-columns: 1fr; }
     .sidebar { position: sticky; top: 0; z-index: 10; border-right: 0; border-bottom: 1px solid var(--border); }
@@ -177,6 +183,7 @@
   @media (max-width: 620px) {
     .page-head, .actions { display: grid; width: 100%; }
     .form-grid { grid-template-columns: 1fr; }
+    .import-tools { grid-template-columns: 1fr; }
     .type-switch { grid-template-columns: 1fr; }
   }
 </style>
@@ -218,6 +225,7 @@
       <div class="nav-label">Cargar</div>
       <button onclick="openComprobante()">Camara / comprobante</button>
       <button onclick="openImport()">Estado bancario</button>
+      <button data-page-btn="importacion" onclick="showPage('importacion')">Revisar importacion</button>
       <button onclick="exportExcel()">Descargar Excel</button>
       <div class="nav-label">Cuenta</div>
       <button onclick="signOutCloud()">Cerrar sesion</button>
@@ -326,6 +334,56 @@
         </div>
       </div>
       <div class="grid account-grid" id="account-grid"></div>
+    </section>
+
+    <section class="page" id="page-importacion">
+      <div class="page-head">
+        <div>
+          <h2>Revisar importacion</h2>
+          <p class="muted">Edita las filas detectadas del estado de cuenta antes de cargarlas como movimientos.</p>
+        </div>
+        <div class="actions">
+          <button class="btn" onclick="openImport()">Subir archivo</button>
+          <button class="btn" onclick="exportImportPreviewExcel()">Excel</button>
+          <button class="btn primary" onclick="confirmBankImport()">Importar validos</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-head"><span class="card-title">Acciones masivas</span></div>
+        <div class="card-body">
+          <div class="import-tools">
+            <label>Cuenta<select id="import-bulk-account"></select></label>
+            <label>Destino<select id="import-bulk-dest"></select></label>
+            <label>Tipo<select id="import-bulk-type" onchange="refreshBulkCategoryOptions()"><option value="">Sin cambiar</option><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option><option value="transferencia">Transferencia</option></select></label>
+            <label>Categoria<select id="import-bulk-category"><option value="">Sin cambiar</option></select></label>
+            <button class="btn" onclick="applyImportBulkChanges()">Aplicar a seleccionados</button>
+            <button class="btn danger" onclick="ignoreSelectedImportRows()">Ignorar seleccionados</button>
+          </div>
+          <div class="new-category-box">
+            <div class="import-tools">
+              <label>Nueva categoria<input id="import-new-category" placeholder="Ej: Gastos casa"></label>
+              <label>Tipo<select id="import-new-type"><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option></select></label>
+              <label>Grupo<input id="import-new-group" placeholder="Opcional"></label>
+              <label class="check-row"><input id="import-new-recurring" type="checkbox"> Recurrente</label>
+              <button class="btn" onclick="createCategoryFromImport()">Crear categoria</button>
+            </div>
+          </div>
+          <div class="import-summary" id="import-summary"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="import-table">
+            <thead>
+              <tr>
+                <th class="row-check"><input id="import-select-all" type="checkbox" onchange="toggleAllImportRows(this.checked)"></th>
+                <th>Fecha</th><th>Nombre</th><th>Tipo</th><th>Categoria</th><th>Cuenta</th><th>Destino</th><th class="right">Monto</th><th>Notas</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="import-review-body"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <section class="page" id="page-presupuesto">
@@ -597,6 +655,9 @@ let selectedMovimientoIds = new Set();
 
 function unique(values) {
   return [...new Set(values.map(v => String(v || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+}
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 function today() { return new Date().toISOString().slice(0, 10); }
@@ -1810,6 +1871,11 @@ function refreshSelectors() {
   fillRecurringMonthSelect(document.getElementById('recurring-month'), document.getElementById('recurring-month').value || document.getElementById('dash-month').value || currentMonth());
   fillSelect(document.getElementById('filter-account'), state.cuentas, document.getElementById('filter-account').value, 'Todas las cuentas');
   fillSelect(document.getElementById('filter-cat'), allCategories(), document.getElementById('filter-cat').value, 'Todas las categorías');
+  const bulkAccount = document.getElementById('import-bulk-account');
+  if (bulkAccount) fillSelect(bulkAccount, state.cuentas, bulkAccount.value, 'Sin cambiar');
+  const bulkDest = document.getElementById('import-bulk-dest');
+  if (bulkDest) fillSelect(bulkDest, state.cuentas, bulkDest.value, 'Sin cambiar');
+  refreshBulkCategoryOptions();
 }
 function getRecurringMonths() {
   const set = new Set(getMonths());
@@ -1838,6 +1904,7 @@ function showPage(id) {
   if (id === 'dashboard') renderDashboard();
   if (id === 'recurrentes') renderRecurrentesPage();
   if (id === 'movimientos') renderMovimientos();
+  if (id === 'importacion') renderImportReview();
   if (id === 'cuentas') renderCuentas();
   if (id === 'presupuesto') renderPresupuesto();
   if (id === 'categorias') renderCategorias();
@@ -2221,12 +2288,163 @@ function renderBankPreview() {
   const body = document.getElementById('bank-preview-body');
   body.innerHTML = bankImportRows.map(m => `<tr>
     <td>${dateFmt(m.fecha)}</td>
-    <td>${m.desc}</td>
-    <td><span class="badge gray">${m.categoria}</span></td>
+    <td>${esc(m.desc)}</td>
+    <td><span class="badge gray">${esc(m.categoria)}</span></td>
     <td><span class="badge ${m.tipo === 'ingreso' ? 'green' : 'red'}">${m.tipo}</span></td>
     <td class="right ${m.tipo === 'ingreso' ? 'green' : 'red'}"><strong>${money(m.monto)}</strong></td>
   </tr>`).join('');
   document.getElementById('bank-preview').classList.toggle('hidden', !bankImportRows.length);
+}
+function prepareImportRows(rows, defaultCuentaId) {
+  return (rows || []).map(row => ({
+    id: row.id || uid(),
+    selected: true,
+    ignored: false,
+    cuentaId: row.cuentaId || defaultCuentaId || state.cuentas[0]?.id || '',
+    cuentaDestId: row.cuentaDestId || '',
+    tipo: row.tipo || 'gasto',
+    categoria: row.categoria || defaultCategory(row.tipo || 'gasto'),
+    desc: row.desc || row.categoria || '',
+    monto: Math.abs(Number(row.monto) || 0),
+    fecha: parseDateValue(row.fecha) || row.fecha || today(),
+    notas: row.notas || 'Importado de estado bancario'
+  })).filter(row => row.monto > 0);
+}
+function categoryOptionsForImport(tipo, selected) {
+  if (tipo === 'transferencia') return '<option value="Transferencia">Transferencia</option>';
+  const names = categoryNames(tipo);
+  const options = names.map(name => `<option value="${esc(name)}" ${name === selected ? 'selected' : ''}>${esc(name)}</option>`);
+  if (selected && !names.includes(selected)) options.unshift(`<option value="${esc(selected)}" selected>${esc(selected)}</option>`);
+  return options.join('');
+}
+function refreshBulkCategoryOptions() {
+  const select = document.getElementById('import-bulk-category');
+  if (!select) return;
+  const current = select.value;
+  const tipo = document.getElementById('import-bulk-type')?.value;
+  const cats = tipo && tipo !== 'transferencia' ? categoryNames(tipo) : unique(getCategories().map(c => c.nombre));
+  select.innerHTML = '<option value="">Sin cambiar</option>' + cats.map(c => `<option value="${esc(c)}" ${c === current ? 'selected' : ''}>${esc(c)}</option>`).join('');
+}
+function renderImportReview() {
+  refreshBulkCategoryOptions();
+  const accountBulk = document.getElementById('import-bulk-account');
+  if (accountBulk) fillSelect(accountBulk, state.cuentas, accountBulk.value, 'Sin cambiar');
+  const destBulk = document.getElementById('import-bulk-dest');
+  if (destBulk) fillSelect(destBulk, state.cuentas, destBulk.value, 'Sin cambiar');
+  const body = document.getElementById('import-review-body');
+  if (!bankImportRows.length) {
+    body.innerHTML = '<tr><td colspan="10"><div class="empty">Subi un estado de cuenta para revisar los movimientos antes de importarlos.</div></td></tr>';
+    document.getElementById('import-summary').textContent = 'Sin movimientos pendientes de importacion.';
+    const all = document.getElementById('import-select-all');
+    if (all) all.checked = false;
+    return;
+  }
+  body.innerHTML = bankImportRows.map(row => {
+    const cls = row.ignored ? 'import-row-ignored' : '';
+    return `<tr class="${cls}">
+      <td class="row-check"><input type="checkbox" ${row.selected ? 'checked' : ''} onchange="updateImportRow('${row.id}', 'selected', this.checked)"></td>
+      <td><input type="date" value="${esc(row.fecha)}" onchange="updateImportRow('${row.id}', 'fecha', this.value)"></td>
+      <td><input class="desc-input" value="${esc(row.desc)}" onchange="updateImportRow('${row.id}', 'desc', this.value)"></td>
+      <td><select onchange="updateImportRow('${row.id}', 'tipo', this.value)"><option value="gasto" ${row.tipo === 'gasto' ? 'selected' : ''}>Gasto</option><option value="ingreso" ${row.tipo === 'ingreso' ? 'selected' : ''}>Ingreso</option><option value="transferencia" ${row.tipo === 'transferencia' ? 'selected' : ''}>Transferencia</option></select></td>
+      <td><select onchange="updateImportRow('${row.id}', 'categoria', this.value)">${categoryOptionsForImport(row.tipo, row.categoria)}</select></td>
+      <td><select onchange="updateImportRow('${row.id}', 'cuentaId', this.value)">${state.cuentas.map(c => `<option value="${esc(c.id)}" ${c.id === row.cuentaId ? 'selected' : ''}>${esc(c.nombre)}</option>`).join('')}</select></td>
+      <td><select onchange="updateImportRow('${row.id}', 'cuentaDestId', this.value)"><option value="">-</option>${state.cuentas.map(c => `<option value="${esc(c.id)}" ${c.id === row.cuentaDestId ? 'selected' : ''}>${esc(c.nombre)}</option>`).join('')}</select></td>
+      <td class="right"><input type="number" step="0.01" value="${Number(row.monto || 0)}" onchange="updateImportRow('${row.id}', 'monto', this.value)"></td>
+      <td><input value="${esc(row.notas || '')}" onchange="updateImportRow('${row.id}', 'notas', this.value)"></td>
+      <td class="right"><button class="btn sm ${row.ignored ? '' : 'danger'}" onclick="toggleImportIgnored('${row.id}')">${row.ignored ? 'Usar' : 'Ignorar'}</button></td>
+    </tr>`;
+  }).join('');
+  const valid = bankImportRows.filter(row => !row.ignored && row.monto > 0 && row.fecha && row.desc && row.categoria && row.cuentaId && (row.tipo !== 'transferencia' || (row.cuentaDestId && row.cuentaDestId !== row.cuentaId)));
+  const selected = bankImportRows.filter(row => row.selected && !row.ignored);
+  document.getElementById('import-summary').innerHTML = `<span>${bankImportRows.length} detectados</span><span>${valid.length} validos para importar</span><span>${selected.length} seleccionados</span>`;
+  const all = document.getElementById('import-select-all');
+  if (all) all.checked = bankImportRows.length > 0 && bankImportRows.every(row => row.selected);
+}
+function updateImportRow(id, field, value) {
+  const row = bankImportRows.find(item => item.id === id);
+  if (!row) return;
+  if (field === 'selected') row.selected = Boolean(value);
+  else if (field === 'monto') row.monto = Math.abs(Number(value) || 0);
+  else if (field === 'tipo') {
+    row.tipo = value;
+    if (value === 'transferencia') row.categoria = 'Transferencia';
+    else if (!categoryNames(value).includes(row.categoria)) row.categoria = categoryForDescription(row.desc, value);
+  } else row[field] = value;
+  renderImportReview();
+}
+function toggleAllImportRows(checked) {
+  bankImportRows.forEach(row => row.selected = checked);
+  renderImportReview();
+}
+function toggleImportIgnored(id) {
+  const row = bankImportRows.find(item => item.id === id);
+  if (!row) return;
+  row.ignored = !row.ignored;
+  row.selected = !row.ignored;
+  renderImportReview();
+}
+function selectedImportRows() {
+  return bankImportRows.filter(row => row.selected && !row.ignored);
+}
+function applyImportBulkChanges() {
+  const rows = selectedImportRows();
+  if (!rows.length) return toast('Selecciona al menos una fila.');
+  const cuentaId = document.getElementById('import-bulk-account').value;
+  const cuentaDestId = document.getElementById('import-bulk-dest').value;
+  const tipo = document.getElementById('import-bulk-type').value;
+  const categoria = document.getElementById('import-bulk-category').value;
+  rows.forEach(row => {
+    if (cuentaId) row.cuentaId = cuentaId;
+    if (cuentaDestId) row.cuentaDestId = cuentaDestId;
+    if (tipo) {
+      row.tipo = tipo;
+      if (!categoria) row.categoria = tipo === 'transferencia' ? 'Transferencia' : categoryForDescription(row.desc, tipo);
+    }
+    if (categoria) row.categoria = categoria;
+  });
+  renderImportReview();
+  toast('Cambios aplicados');
+}
+function ignoreSelectedImportRows() {
+  const rows = selectedImportRows();
+  if (!rows.length) return toast('Selecciona al menos una fila.');
+  rows.forEach(row => { row.ignored = true; row.selected = false; });
+  renderImportReview();
+  toast('Filas ignoradas');
+}
+function createCategoryFromImport() {
+  const nombre = document.getElementById('import-new-category').value.trim();
+  const tipo = document.getElementById('import-new-type').value;
+  const grupo = document.getElementById('import-new-group').value.trim();
+  const recurrente = tipo === 'gasto' && document.getElementById('import-new-recurring').checked;
+  if (!nombre) return toast('Ingresa un nombre de categoria.');
+  if (state.categories.some(c => c.tipo === tipo && normalizeKey(c.nombre) === normalizeKey(nombre))) return toast('Esa categoria ya existe.');
+  state.categories.push({ id: uid(), nombre, tipo, grupo, recurrente });
+  document.getElementById('import-new-category').value = '';
+  document.getElementById('import-new-group').value = '';
+  document.getElementById('import-new-recurring').checked = false;
+  save();
+  refreshAll();
+  showPage('importacion');
+  toast('Categoria creada');
+}
+function exportImportPreviewExcel() {
+  if (!window.XLSX) return toast('No se pudo cargar la libreria de Excel.');
+  if (!bankImportRows.length) return toast('No hay importacion para exportar.');
+  const rows = bankImportRows.map(row => ({
+    Fecha: row.fecha,
+    Nombre: row.desc,
+    Tipo: row.tipo,
+    Categoria: row.categoria,
+    Cuenta: state.cuentas.find(c => c.id === row.cuentaId)?.nombre || '',
+    CuentaDestino: state.cuentas.find(c => c.id === row.cuentaDestId)?.nombre || '',
+    Monto: row.monto,
+    Notas: row.notas || '',
+    Ignorado: row.ignored ? 'Si' : 'No'
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Revision importacion');
+  XLSX.writeFile(wb, `finanzas_importacion_${today()}.xlsx`);
 }
 async function handleBankFile(event) {
   const file = event.target.files[0];
@@ -2238,7 +2456,8 @@ async function handleBankFile(event) {
     else if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) rows = (await readPDFText(file)).split(/\n+/).map(line => [line]);
     else throw new Error('Formato no soportado');
     const rawText = rows.map(row => row.join(' | ')).join('\n');
-    bankImportRows = parseBankMovements(rows, document.getElementById('bank-default-type').value);
+    const defaultCuentaId = document.getElementById('bank-cuenta').value;
+    bankImportRows = prepareImportRows(parseBankMovements(rows, document.getElementById('bank-default-type').value), defaultCuentaId);
     if (!bankImportRows.length && rawText.trim().length >= 10) {
       setStatus('bank-status', 'Parser local sin resultados. Probando IA...');
       try {
@@ -2249,7 +2468,7 @@ async function handleBankFile(event) {
           learningRules: aiTrainingExamples(),
           defaultType: document.getElementById('bank-default-type').value
         });
-        bankImportRows = (aiResult.movimientos || []).map(m => {
+        bankImportRows = prepareImportRows((aiResult.movimientos || []).map(m => {
           const tipo = m.tipo || 'gasto';
           const fallback = categoryForDescription(`${m.desc || ''} ${m.concepto || ''}`, tipo);
           return {
@@ -2260,7 +2479,7 @@ async function handleBankFile(event) {
             fecha: parseDateValue(m.fecha) || today(),
             notas: m.notas || 'Importado con IA'
           };
-        }).filter(m => m.monto > 0);
+        }), defaultCuentaId);
       } catch (aiErr) {
         console.warn('IA no disponible para estado bancario', aiErr);
       }
@@ -2269,10 +2488,27 @@ async function handleBankFile(event) {
     }
     renderBankPreview();
     setStatus('bank-status', `${bankImportRows.length} movimientos detectados. Revisa la vista previa antes de importar.`);
-    if (bankImportRows.length) document.getElementById('bank-save').classList.remove('hidden');
+    if (bankImportRows.length) {
+      document.getElementById('bank-save').classList.remove('hidden');
+      closeModal('modal-import');
+      showPage('importacion');
+    }
   } catch (err) {
     setStatus('bank-status', 'No pude procesar ese archivo. Proba exportarlo como Excel/CSV o PDF con texto seleccionable.');
   }
+}
+function confirmBankImport() {
+  const rows = bankImportRows.filter(row => !row.ignored);
+  const validRows = rows.filter(row => row.monto > 0 && row.fecha && row.desc && row.categoria && row.cuentaId && (row.tipo !== 'transferencia' || (row.cuentaDestId && row.cuentaDestId !== row.cuentaId)));
+  if (!validRows.length) return toast('No hay filas validas para importar.');
+  if (validRows.length < rows.length && !confirm(`Hay ${rows.length - validRows.length} filas incompletas. Importar solo las validas?`)) return;
+  validRows.forEach(row => addMovimiento({ ...row }));
+  save();
+  closeModal('modal-import');
+  bankImportRows = [];
+  refreshAll();
+  showPage('movimientos');
+  toast(`${validRows.length} movimientos importados`);
 }
 function exportCSV() {
   const movs = getFilteredMovimientos();
