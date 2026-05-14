@@ -69,9 +69,8 @@
   .brand h1 { font: 700 18px/1.1 Georgia, serif; letter-spacing: -.2px; }
   .brand-title { display: flex; align-items: center; gap: 9px; }
   .brand-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--green-bg); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 32%, var(--border)); font: 700 17px/1 Georgia, serif; }
-  .demo-badge { display: none; color: var(--red); border: 1px solid rgba(178, 54, 54, .35); background: var(--red-bg); border-radius: 999px; padding: 2px 7px; font: 700 11px/1.2 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .05em; }
-  body.demo-mode .demo-badge { display: inline-flex; }
-  .shell.sidebar-collapsed .demo-badge { display: none; }
+  body.demo-mode .brand-title::after { content: "Demo"; display: inline-flex; color: var(--red); border: 1px solid rgba(178, 54, 54, .35); background: var(--red-bg); border-radius: 999px; padding: 2px 7px; font: 700 11px/1.2 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .05em; }
+  .shell.sidebar-collapsed .brand-title::after { display: none; }
   .brand p { color: var(--text2); font-size: 12px; margin-top: 3px; }
   .nav { display: grid; gap: 4px; }
   .nav-label { color: var(--text3); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; margin: 8px 8px 2px; }
@@ -208,7 +207,7 @@
     .nav button, .shell.sidebar-collapsed .nav button { width: 100%; height: auto; min-width: 0; justify-content: center; padding: 9px 8px; font-size: 12px; text-align: center; }
     .shell.sidebar-collapsed .nav button::before { content: none; }
     .shell.sidebar-collapsed .brand-title span:not(.brand-icon) { display: inline; }
-    body.demo-mode .shell.sidebar-collapsed .demo-badge { display: inline-flex; }
+    body.demo-mode .shell.sidebar-collapsed .brand-title::after { display: inline-flex; }
     main { padding: 18px 14px; }
     .metrics, .two-col { grid-template-columns: 1fr; }
   }
@@ -241,7 +240,7 @@
   <aside class="sidebar">
     <button class="btn sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Ocultar o mostrar menu" type="button">&#8249;</button>
     <div class="brand">
-      <h1 class="brand-title"><span class="brand-icon">$</span><span>Finanzas Casa</span><span class="demo-badge">Demo</span></h1>
+      <h1 class="brand-title"><span class="brand-icon">$</span><span>Finanzas Casa</span></h1>
       <p>Hogar</p>
     </div>
     <div class="nav">
@@ -3201,6 +3200,7 @@ function updateAuthUI() {
     refreshAll();
     return;
   }
+  document.body.classList.remove('demo-mode');
   const logged = Boolean(currentAppUser);
   document.getElementById('auth-screen')?.classList.toggle('hidden', logged);
   document.getElementById('app-shell')?.classList.toggle('hidden', !logged);
