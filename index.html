@@ -212,7 +212,7 @@
 </style>
 </head>
 <body>
-<div class="auth-screen" id="auth-screen">
+<div class="auth-screen hidden" id="auth-screen">
   <div class="auth-card">
     <div>
       <h1>Finanzas Casa</h1>
@@ -680,7 +680,7 @@
 <script>
 const STORAGE_KEY = 'finanzas_hogar_conceptos_v1';
 const CLOUD_CONFIG_KEY = 'finanzas_hogar_supabase_config_v1';
-const IS_DEMO = location.pathname.replace(/\/$/, '') === '/demo';
+const IS_DEMO = location.pathname.replace(/\/$/, '') === '/demo' || location.search.includes('demo=1');
 const DEFAULT_CLOUD_CONFIG = {
   url: 'https://mnkkearluehndvkudulc.supabase.co',
   anonKey: 'sb_publishable_ELCFM1JVaSE2tU9M0vs45g_hQZnPAOJ'
