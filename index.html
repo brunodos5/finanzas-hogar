@@ -56,12 +56,16 @@
   body { min-height: 100vh; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
   button, input, select { font: inherit; }
   .shell { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; }
-  .shell.sidebar-collapsed { grid-template-columns: 0 1fr; }
-  .sidebar { background: linear-gradient(180deg, color-mix(in srgb, var(--green-bg) 18%, var(--surface)) 0%, var(--surface) 38%); border-right: 1px solid var(--border); padding: 18px 12px; display: flex; flex-direction: column; gap: 18px; }
-  .shell.sidebar-collapsed .sidebar { transform: translateX(-100%); overflow: hidden; padding-left: 0; padding-right: 0; border-right: 0; }
-  .sidebar, .shell { transition: grid-template-columns .18s ease, transform .18s ease; }
-  .sidebar-toggle { position: fixed; top: 18px; left: 12px; z-index: 25; width: 32px; height: 44px; justify-content: center; padding: 0; border-radius: 0 8px 8px 0; box-shadow: 0 10px 30px rgba(0,0,0,.12); font-size: 22px; line-height: 1; }
-  .shell:not(.sidebar-collapsed) .sidebar-toggle { left: 229px; border-radius: 0 8px 8px 0; }
+  .shell.sidebar-collapsed { grid-template-columns: 64px 1fr; }
+  .sidebar { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--green-bg) 18%, var(--surface)) 0%, var(--surface) 38%); border-right: 1px solid var(--border); padding: 18px 12px; display: flex; flex-direction: column; gap: 18px; overflow: hidden; }
+  .sidebar, .shell { transition: grid-template-columns .18s ease; }
+  .sidebar-toggle { align-self: flex-end; width: 34px; height: 34px; justify-content: center; padding: 0; font-size: 20px; line-height: 1; }
+  .shell.sidebar-collapsed .sidebar { padding: 12px 10px; align-items: center; }
+  .shell.sidebar-collapsed .sidebar-toggle { align-self: center; }
+  .shell.sidebar-collapsed .brand-title span:not(.brand-icon), .shell.sidebar-collapsed .brand p, .shell.sidebar-collapsed .nav-label, .shell.sidebar-collapsed .sidebar-total { display: none; }
+  .shell.sidebar-collapsed .nav { width: 100%; }
+  .shell.sidebar-collapsed .nav button { width: 42px; height: 40px; justify-content: center; padding: 0; font-size: 0; }
+  .shell.sidebar-collapsed .nav button::before { content: attr(data-icon); font-size: 16px; line-height: 1; }
   .brand h1 { font: 700 18px/1.1 Georgia, serif; letter-spacing: -.2px; }
   .brand-title { display: flex; align-items: center; gap: 9px; }
   .brand-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--green-bg); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 32%, var(--border)); font: 700 17px/1 Georgia, serif; }
@@ -178,14 +182,10 @@
   .import-summary { display: flex; gap: 10px; flex-wrap: wrap; color: var(--text2); font-size: 12px; margin-top: 10px; }
   .new-category-box { margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--surface2) 38%, transparent); }
   @media (max-width: 900px) {
-    .shell { grid-template-columns: 1fr; }
-    .shell:not(.sidebar-collapsed) { grid-template-columns: 230px 1fr; }
-    .sidebar { position: fixed; inset: 0 auto 0 0; width: 230px; z-index: 20; border-right: 1px solid var(--border); border-bottom: 0; box-shadow: 18px 0 42px rgba(0,0,0,.18); }
-    .shell:not(.sidebar-collapsed)::after { content: ""; position: fixed; inset: 0; background: rgba(0,0,0,.28); z-index: 15; }
-    .shell:not(.sidebar-collapsed) .sidebar-toggle { left: 229px; }
-    .nav { grid-template-columns: repeat(4, 1fr); }
-    .nav-label, .sidebar-total { display: none; }
-    main { padding: 18px; }
+    .shell { grid-template-columns: 230px 1fr; }
+    .shell.sidebar-collapsed { grid-template-columns: 64px 1fr; }
+    .sidebar { border-bottom: 0; }
+    main { padding: 18px 14px; }
     .metrics, .two-col { grid-template-columns: 1fr; }
   }
   @media (max-width: 620px) {
@@ -216,27 +216,27 @@
 </div>
 
 <div class="shell hidden" id="app-shell">
-  <button class="btn sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Ocultar o mostrar menu" type="button">‹</button>
   <aside class="sidebar">
+    <button class="btn sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Ocultar o mostrar menu" type="button">&#8249;</button>
     <div class="brand">
       <h1 class="brand-title"><span class="brand-icon">$</span><span>Finanzas Casa</span></h1>
       <p>Hogar</p>
     </div>
     <div class="nav">
       <div class="nav-label">Principal</div>
-      <button class="active" data-page-btn="dashboard" onclick="showPage('dashboard')">▦ Inicio</button>
-      <button data-page-btn="movimientos" onclick="showPage('movimientos')">≡ Movimientos</button>
-      <button data-page-btn="cuentas" onclick="showPage('cuentas')">▣ Cuentas</button>
-      <button data-page-btn="presupuesto" onclick="showPage('presupuesto')">▥ Presupuesto</button>
-      <button data-page-btn="recurrentes" onclick="showPage('recurrentes')">Recurrentes</button>
-      <button data-page-btn="categorias" onclick="showPage('categorias')">Categorias</button>
-      <button data-page-btn="nube" onclick="showPage('nube')">Nube</button>
+      <button class="active" data-icon="⌂" data-page-btn="dashboard" onclick="showPage('dashboard')">Inicio</button>
+      <button data-icon="≡" data-page-btn="movimientos" onclick="showPage('movimientos')">Movimientos</button>
+      <button data-icon="▣" data-page-btn="cuentas" onclick="showPage('cuentas')">Cuentas</button>
+      <button data-icon="▥" data-page-btn="presupuesto" onclick="showPage('presupuesto')">Presupuesto</button>
+      <button data-icon="R" data-page-btn="recurrentes" onclick="showPage('recurrentes')">Recurrentes</button>
+      <button data-icon="C" data-page-btn="categorias" onclick="showPage('categorias')">Categorias</button>
+      <button data-icon="N" data-page-btn="nube" onclick="showPage('nube')">Nube</button>
       <div class="nav-label">Cargar</div>
-      <button onclick="openComprobante()">Camara / comprobante</button>
-      <button onclick="openImport()">Estado bancario</button>
-      <button onclick="exportExcel()">Descargar Excel</button>
+      <button data-icon="◉" onclick="openComprobante()">Camara / comprobante</button>
+      <button data-icon="⇩" onclick="openImport()">Estado bancario</button>
+      <button data-icon="X" onclick="exportExcel()">Descargar Excel</button>
       <div class="nav-label">Cuenta</div>
-      <button onclick="signOutCloud()">Cerrar sesion</button>
+      <button data-icon="↩" onclick="signOutCloud()">Cerrar sesion</button>
     </div>
     <div class="sidebar-total">
       <span>Balance total</span>
