@@ -709,6 +709,7 @@ let bankImportRows = [];
 let lastReceiptSuggestion = null;
 let selectedMovimientoIds = new Set();
 let summaryOnlyWithBalance = false;
+let currentSummaryDetail = null;
 
 function unique(values) {
   return [...new Set(values.map(v => String(v || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
@@ -1279,6 +1280,7 @@ function toggleSummaryNonZero() {
 }
 function openSummaryDetail(catName, tipo, month) {
   catName = decodeURIComponent(catName);
+  currentSummaryDetail = { catName, tipo, month };
   const mode = document.getElementById('summary-mode').value || 'resumen';
   const items = summaryDetailItems(catName, tipo, month, mode);
   document.getElementById('summary-detail-title').textContent = `${catName} · ${monthFmt(month)}`;
@@ -1292,7 +1294,7 @@ function openSummaryDetail(catName, tipo, month) {
     <div class="status-box" style="margin-top:0;">Total: <strong>${money(total)}</strong> · ${items.length} ${items.length === 1 ? 'registro' : 'registros'}</div>
     <div class="table-wrap" style="margin-top:12px;">
       <table>
-        <thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoria</th><th>Cuenta</th><th class="right">Monto</th></tr></thead>
+        <thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoria</th><th>Cuenta</th><th class="right">Monto</th><th></th></tr></thead>
         <tbody>${items.map(item => {
           const cuenta = state.cuentas.find(c => c.id === item.cuentaId);
           return `<tr>
@@ -1301,11 +1303,22 @@ function openSummaryDetail(catName, tipo, month) {
             <td><span class="badge gray">${esc(item.categoria || '')}</span></td>
             <td>${cuenta ? esc(cuenta.nombre) : '-'}</td>
             <td class="right ${tipo === 'ingreso' ? 'green' : 'red'}"><strong>${money(item.monto)}</strong></td>
+            <td class="right">${item.kind === 'budget' ? '' : `<button class="btn sm" onclick="editSummaryMovement('${item.id}')">Editar</button> <button class="btn sm danger" onclick="deleteSummaryMovement('${item.id}')">Eliminar</button>`}</td>
           </tr>`;
         }).join('')}</tbody>
       </table>
     </div>`;
   openModal('modal-summary-detail');
+}
+function editSummaryMovement(id) {
+  closeModal('modal-summary-detail');
+  editarMovimiento(id);
+}
+function deleteSummaryMovement(id) {
+  if (!confirm('Eliminar este movimiento?')) return;
+  eliminarMovimiento(id);
+  renderResumen();
+  if (currentSummaryDetail) openSummaryDetail(encodeURIComponent(currentSummaryDetail.catName), currentSummaryDetail.tipo, currentSummaryDetail.month);
 }
 
 function normalizeText(text) {
