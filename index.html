@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f766e">
+<meta name="color-scheme" content="light">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -18,6 +19,7 @@
 <script src="/vendor/supabase-js.js"></script>
 <style>
   :root {
+    color-scheme: light;
     --bg: #f6f4ef;
     --surface: #ffffff;
     --surface2: #ece8df;
@@ -36,25 +38,10 @@
     --amber-bg: #f8edc7;
     --radius: 8px;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #171717;
-      --surface: #232323;
-      --surface2: #2d2b28;
-      --border: rgba(255,255,255,.1);
-      --border2: rgba(255,255,255,.2);
-      --text: #f4f1ea;
-      --text2: #b1aaa0;
-      --text3: #79736c;
-      --green-bg: #0d2e1d;
-      --red-bg: #351111;
-      --blue-bg: #10243f;
-      --amber-bg: #2f2305;
-    }
-  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: light; background: var(--bg); }
   body { min-height: 100vh; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  button, input, select { font: inherit; }
+  button, input, select, textarea { font: inherit; color-scheme: light; }
   .shell { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; }
   .shell.sidebar-collapsed { grid-template-columns: 64px 1fr; }
   .sidebar { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--green-bg) 18%, var(--surface)) 0%, var(--surface) 38%); border-right: 1px solid var(--border); padding: 18px 12px; display: flex; flex-direction: column; gap: 18px; overflow: hidden; }
