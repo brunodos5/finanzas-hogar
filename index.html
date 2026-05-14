@@ -746,7 +746,8 @@ const STORAGE_KEY = 'finanzas_hogar_conceptos_v1';
 const CLOUD_CONFIG_KEY = 'finanzas_hogar_supabase_config_v1';
 const APP_USER_SESSION_KEY = 'finanzas_hogar_app_user_v1';
 const APP_USER_PERSIST_KEY = 'finanzas_hogar_app_user_persist_v1';
-const IS_DEMO = location.pathname.replace(/\/$/, '') === '/demo' || location.search.includes('demo=1');
+const IS_STANDALONE_APP = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+const IS_DEMO = !IS_STANDALONE_APP && (location.pathname.replace(/\/$/, '') === '/demo' || location.search.includes('demo=1'));
 const DEFAULT_ADMIN_HASH = 'dd821402cfc9e94d7619b7bc673b584458cfee8d866fdab75ec4bf12f3d12f56';
 const DEFAULT_CLOUD_CONFIG = {
   url: 'https://mnkkearluehndvkudulc.supabase.co',
@@ -2234,7 +2235,7 @@ function normalizeUsername(value) {
   return normalizeKey(value).replace(/\s+/g, '');
 }
 function userIsAdmin() {
-  return IS_DEMO || currentAppUser?.role === 'admin';
+  return currentAppUser?.role === 'admin';
 }
 function applyRoleVisibility() {
   document.querySelectorAll('[data-admin-only]').forEach(el => el.classList.toggle('hidden', !userIsAdmin()));
