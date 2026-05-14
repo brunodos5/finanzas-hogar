@@ -1,4 +1,4 @@
-const { json, callOpenAI, conceptsSummary, learningRulesSummary } = require('./_shared');
+const { json, callOpenAI, conceptsSummary, learningRulesSummary, requireAllowedOrigin, parseJsonBody } = require('./_shared');
 
 const schema = {
   type: 'object',
@@ -30,8 +30,10 @@ exports.handler = async event => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
 
   try {
-    const { text, fileName, concepts, learningRules, defaultType } = JSON.parse(event.body || '{}');
+    requireAllowedOrigin(event);
+    const { text, fileName, concepts, learningRules, defaultType } = parseJsonBody(event, 250000);
     if (!text || text.length < 10) return json(400, { error: 'Missing statement text' });
+    if (text.length > 50000) return json(413, { error: 'Estado de cuenta demasiado largo para analizar.' });
 
     const prompt = [
       'Extraé SOLO movimientos/transacciones reales de este estado de cuenta bancario.',

@@ -1,4 +1,4 @@
-const { json, callOpenAI, conceptsSummary, learningRulesSummary } = require('./_shared');
+const { json, callOpenAI, conceptsSummary, learningRulesSummary, requireAllowedOrigin, parseJsonBody } = require('./_shared');
 
 const schema = {
   type: 'object',
@@ -21,8 +21,10 @@ exports.handler = async event => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
 
   try {
-    const { file, concepts, learningRules, today } = JSON.parse(event.body || '{}');
+    requireAllowedOrigin(event);
+    const { file, concepts, learningRules, today } = parseJsonBody(event, 9000000);
     if (!file?.data || !file?.type) return json(400, { error: 'Missing file data' });
+    if (String(file.data).length > 8000000) return json(413, { error: 'Archivo demasiado grande para analizar.' });
 
     const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
     const filePart = isPdf

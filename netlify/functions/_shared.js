@@ -1,18 +1,54 @@
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || process.env.NETLIFY_AI_GATEWAY_BASE_URL || 'https://api.openai.com/v1';
 const OPENAI_URL = `${OPENAI_BASE_URL.replace(/\/$/, '')}/responses`;
 const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const DEFAULT_ALLOWED_ORIGIN = 'https://finanzas-hogar-263.netlify.app';
 
 function json(statusCode, body) {
   return {
     statusCode,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      'Vary': 'Origin'
     },
     body: JSON.stringify(body)
   };
+}
+
+function header(event, name) {
+  const wanted = name.toLowerCase();
+  const found = Object.entries(event.headers || {}).find(([key]) => key.toLowerCase() === wanted);
+  return found ? found[1] : '';
+}
+
+function allowedOrigins() {
+  return [
+    process.env.APP_ORIGIN,
+    process.env.URL,
+    DEFAULT_ALLOWED_ORIGIN
+  ].filter(Boolean).map(value => {
+    try { return new URL(value).origin; } catch { return String(value).replace(/\/$/, ''); }
+  });
+}
+
+function requireAllowedOrigin(event) {
+  const origin = header(event, 'origin');
+  if (!origin) return;
+  if (!allowedOrigins().includes(origin)) {
+    const err = new Error('Origin not allowed');
+    err.statusCode = 403;
+    throw err;
+  }
+}
+
+function parseJsonBody(event, maxBytes = 300000) {
+  const body = event.body || '';
+  const bytes = Buffer.byteLength(body, event.isBase64Encoded ? 'base64' : 'utf8');
+  if (bytes > maxBytes) {
+    const err = new Error('Archivo demasiado grande para analizar.');
+    err.statusCode = 413;
+    throw err;
+  }
+  return JSON.parse(body || '{}');
 }
 
 function getOpenAIHeaders() {
@@ -78,3 +114,5 @@ exports.json = json;
 exports.callOpenAI = callOpenAI;
 exports.conceptsSummary = conceptsSummary;
 exports.learningRulesSummary = learningRulesSummary;
+exports.requireAllowedOrigin = requireAllowedOrigin;
+exports.parseJsonBody = parseJsonBody;
