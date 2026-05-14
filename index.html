@@ -56,7 +56,12 @@
   body { min-height: 100vh; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
   button, input, select { font: inherit; }
   .shell { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; }
+  .shell.sidebar-collapsed { grid-template-columns: 0 1fr; }
   .sidebar { background: linear-gradient(180deg, color-mix(in srgb, var(--green-bg) 18%, var(--surface)) 0%, var(--surface) 38%); border-right: 1px solid var(--border); padding: 18px 12px; display: flex; flex-direction: column; gap: 18px; }
+  .shell.sidebar-collapsed .sidebar { transform: translateX(-100%); overflow: hidden; padding-left: 0; padding-right: 0; border-right: 0; }
+  .sidebar, .shell { transition: grid-template-columns .18s ease, transform .18s ease; }
+  .sidebar-toggle { position: fixed; top: 14px; left: 14px; z-index: 25; width: 38px; height: 38px; justify-content: center; padding: 0; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+  .shell:not(.sidebar-collapsed) .sidebar-toggle { left: 244px; }
   .brand h1 { font: 700 18px/1.1 Georgia, serif; letter-spacing: -.2px; }
   .brand-title { display: flex; align-items: center; gap: 9px; }
   .brand-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--green-bg); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 32%, var(--border)); font: 700 17px/1 Georgia, serif; }
@@ -174,7 +179,10 @@
   .new-category-box { margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--surface2) 38%, transparent); }
   @media (max-width: 900px) {
     .shell { grid-template-columns: 1fr; }
-    .sidebar { position: sticky; top: 0; z-index: 10; border-right: 0; border-bottom: 1px solid var(--border); }
+    .shell:not(.sidebar-collapsed) { grid-template-columns: 230px 1fr; }
+    .sidebar { position: fixed; inset: 0 auto 0 0; width: 230px; z-index: 20; border-right: 1px solid var(--border); border-bottom: 0; box-shadow: 18px 0 42px rgba(0,0,0,.18); }
+    .shell:not(.sidebar-collapsed)::after { content: ""; position: fixed; inset: 0; background: rgba(0,0,0,.28); z-index: 15; }
+    .shell:not(.sidebar-collapsed) .sidebar-toggle { left: 244px; }
     .nav { grid-template-columns: repeat(4, 1fr); }
     .nav-label, .sidebar-total { display: none; }
     main { padding: 18px; }
@@ -208,6 +216,7 @@
 </div>
 
 <div class="shell hidden" id="app-shell">
+  <button class="btn sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Ocultar o mostrar menu" type="button">☰</button>
   <aside class="sidebar">
     <div class="brand">
       <h1 class="brand-title"><span class="brand-icon">$</span><span>Finanzas Casa</span></h1>
@@ -225,7 +234,6 @@
       <div class="nav-label">Cargar</div>
       <button onclick="openComprobante()">Camara / comprobante</button>
       <button onclick="openImport()">Estado bancario</button>
-      <button data-page-btn="importacion" onclick="showPage('importacion')">Revisar importacion</button>
       <button onclick="exportExcel()">Descargar Excel</button>
       <div class="nav-label">Cuenta</div>
       <button onclick="signOutCloud()">Cerrar sesion</button>
@@ -611,6 +619,7 @@
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('modal-import')">Cancelar</button>
+      <button class="btn hidden" id="bank-review" onclick="openImportReview()">Revisar importacion</button>
       <button class="btn primary hidden" id="bank-save" onclick="confirmBankImport()">Importar movimientos</button>
     </div>
   </div>
@@ -1318,6 +1327,7 @@ function openImport() {
   document.getElementById('bank-file').value = '';
   document.getElementById('bank-status').classList.add('hidden');
   document.getElementById('bank-preview').classList.add('hidden');
+  document.getElementById('bank-review')?.classList.add('hidden');
   document.getElementById('bank-save').classList.add('hidden');
   fillSelect(document.getElementById('bank-cuenta'), state.cuentas);
   openModal('modal-import');
@@ -1909,6 +1919,23 @@ function showPage(id) {
   if (id === 'presupuesto') renderPresupuesto();
   if (id === 'categorias') renderCategorias();
   if (id === 'nube') renderCloud();
+  if (window.matchMedia('(max-width: 900px)').matches) setSidebarCollapsed(true, false);
+}
+function setSidebarCollapsed(collapsed, remember = true) {
+  const shell = document.getElementById('app-shell');
+  if (!shell) return;
+  shell.classList.toggle('sidebar-collapsed', collapsed);
+  document.getElementById('sidebar-toggle').textContent = collapsed ? '☰' : '×';
+  if (remember) localStorage.setItem('finanzas_sidebar_collapsed', collapsed ? '1' : '0');
+}
+function toggleSidebar() {
+  const shell = document.getElementById('app-shell');
+  setSidebarCollapsed(!shell.classList.contains('sidebar-collapsed'));
+}
+function configureSidebar() {
+  const saved = localStorage.getItem('finanzas_sidebar_collapsed');
+  const mobile = window.matchMedia('(max-width: 900px)').matches;
+  setSidebarCollapsed(saved === null ? mobile : saved === '1', false);
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
@@ -2446,6 +2473,11 @@ function exportImportPreviewExcel() {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Revision importacion');
   XLSX.writeFile(wb, `finanzas_importacion_${today()}.xlsx`);
 }
+function openImportReview() {
+  if (!bankImportRows.length) return toast('Primero subi un estado de cuenta.');
+  closeModal('modal-import');
+  showPage('importacion');
+}
 async function handleBankFile(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -2489,9 +2521,8 @@ async function handleBankFile(event) {
     renderBankPreview();
     setStatus('bank-status', `${bankImportRows.length} movimientos detectados. Revisa la vista previa antes de importar.`);
     if (bankImportRows.length) {
+      document.getElementById('bank-review')?.classList.remove('hidden');
       document.getElementById('bank-save').classList.remove('hidden');
-      closeModal('modal-import');
-      showPage('importacion');
     }
   } catch (err) {
     setStatus('bank-status', 'No pude procesar ese archivo. Proba exportarlo como Excel/CSV o PDF con texto seleccionable.');
@@ -2786,6 +2817,8 @@ if (window.pdfjsLib) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 load();
+configureSidebar();
+window.addEventListener('resize', configureSidebar);
 refreshSelectors();
 refreshAll();
 initSupabase().catch(() => {});
