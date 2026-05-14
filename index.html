@@ -200,6 +200,16 @@
     .shell { grid-template-columns: 230px 1fr; }
     .shell.sidebar-collapsed { grid-template-columns: 64px 1fr; }
     .sidebar { border-bottom: 0; }
+    body.demo-mode .shell, body.demo-mode .shell.sidebar-collapsed { grid-template-columns: 1fr; }
+    body.demo-mode .sidebar { position: sticky; top: 0; z-index: 10; flex-direction: row; align-items: center; gap: 10px; border-right: 0; border-bottom: 1px solid var(--border); padding: 10px; overflow-x: auto; }
+    body.demo-mode .sidebar-toggle, body.demo-mode .sidebar-total, body.demo-mode .brand p, body.demo-mode .nav-label { display: none; }
+    body.demo-mode .brand { flex: 0 0 auto; }
+    body.demo-mode .brand-title { white-space: nowrap; }
+    body.demo-mode .nav { display: flex; gap: 4px; overflow-x: auto; min-width: 0; }
+    body.demo-mode .nav button, body.demo-mode .shell.sidebar-collapsed .nav button { width: auto; height: auto; min-width: max-content; justify-content: center; padding: 8px 10px; font-size: 12px; }
+    body.demo-mode .shell.sidebar-collapsed .nav button::before { content: none; }
+    body.demo-mode .shell.sidebar-collapsed .brand-title span:not(.brand-icon) { display: inline; }
+    body.demo-mode .shell.sidebar-collapsed .demo-badge { display: inline-flex; }
     main { padding: 18px 14px; }
     .metrics, .two-col { grid-template-columns: 1fr; }
   }
@@ -2287,6 +2297,7 @@ function toggleSidebar() {
 function configureSidebar() {
   const saved = IS_DEMO ? null : localStorage.getItem('finanzas_sidebar_collapsed');
   const mobile = window.matchMedia('(max-width: 900px)').matches;
+  if (IS_DEMO && mobile) return setSidebarCollapsed(false, false);
   setSidebarCollapsed(saved === null ? mobile : saved === '1', false);
 }
 function closeModal(id) {
