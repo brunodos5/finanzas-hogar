@@ -181,6 +181,15 @@
   .import-row-ignored { opacity: .48; }
   .import-summary { display: flex; gap: 10px; flex-wrap: wrap; color: var(--text2); font-size: 12px; margin-top: 10px; }
   .new-category-box { margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--surface2) 38%, transparent); }
+  .summary-table th, .summary-table td { white-space: nowrap; }
+  .summary-table .concept-cell { min-width: 180px; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+  .summary-table th.concept-cell { background: var(--surface2); z-index: 2; }
+  .summary-table .month-cell { text-align: right; min-width: 92px; }
+  .summary-table .total-cell { text-align: right; font-weight: 700; background: color-mix(in srgb, var(--surface2) 56%, transparent); }
+  .summary-table .summary-section td { background: color-mix(in srgb, var(--surface2) 64%, transparent); font-weight: 700; text-transform: uppercase; color: var(--text2); font-size: 11px; letter-spacing: .06em; }
+  .summary-table .summary-total td { font-weight: 700; }
+  .summary-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; margin-right: 8px; background: var(--green); }
+  .summary-dot.gasto { background: var(--red); }
   @media (max-width: 900px) {
     .shell { grid-template-columns: 230px 1fr; }
     .shell.sidebar-collapsed { grid-template-columns: 64px 1fr; }
@@ -226,8 +235,9 @@
       <div class="nav-label">Principal</div>
       <button class="active" data-icon="⌂" data-page-btn="dashboard" onclick="showPage('dashboard')">Inicio</button>
       <button data-icon="≡" data-page-btn="movimientos" onclick="showPage('movimientos')">Movimientos</button>
-      <button data-icon="▣" data-page-btn="cuentas" onclick="showPage('cuentas')">Cuentas</button>
       <button data-icon="▥" data-page-btn="presupuesto" onclick="showPage('presupuesto')">Presupuesto</button>
+      <button data-icon="Σ" data-page-btn="resumen" onclick="showPage('resumen')">Resumen</button>
+      <button data-icon="▣" data-page-btn="cuentas" onclick="showPage('cuentas')">Cuentas</button>
       <button data-icon="R" data-page-btn="recurrentes" onclick="showPage('recurrentes')">Recurrentes</button>
       <button data-icon="C" data-page-btn="categorias" onclick="showPage('categorias')">Categorias</button>
       <button data-icon="N" data-page-btn="nube" onclick="showPage('nube')">Nube</button>
@@ -330,20 +340,6 @@
       <div class="card"><div class="table-wrap"><table><thead><tr><th class="row-check"><input id="mov-select-all" type="checkbox" onchange="toggleAllMovimientoSelection(this.checked)"></th><th>Fecha</th><th>Descripción</th><th>Grupo</th><th>Categoría</th><th>Cuenta</th><th>Tipo</th><th class="right">Monto</th><th></th></tr></thead><tbody id="mov-body"></tbody></table></div></div>
     </section>
 
-    <section class="page" id="page-cuentas">
-      <div class="page-head">
-        <div>
-          <h2>Cuentas</h2>
-          <p class="muted">Saldo inicial más ingresos, gastos y transferencias.</p>
-        </div>
-        <div class="actions">
-          <button class="btn" onclick="exportCurrentViewExcel()">Excel</button>
-          <button class="btn primary" onclick="openCuenta()">+ Nueva cuenta</button>
-        </div>
-      </div>
-      <div class="grid account-grid" id="account-grid"></div>
-    </section>
-
     <section class="page" id="page-importacion">
       <div class="page-head">
         <div>
@@ -407,6 +403,44 @@
         </div>
       </div>
       <div id="budget-content"></div>
+    </section>
+
+    <section class="page" id="page-resumen">
+      <div class="page-head">
+        <div>
+          <h2>Resumen</h2>
+          <p class="muted">Planilla anual de ingresos, gastos, presupuesto y saldo acumulado.</p>
+        </div>
+        <div class="actions">
+          <select id="summary-year" onchange="renderResumen()"></select>
+          <select id="summary-mode" onchange="renderResumen()"><option value="resumen">Resumen real</option><option value="presupuesto">Presupuesto</option></select>
+          <select id="summary-group" onchange="renderResumen()"></select>
+          <label class="check-row"><input id="summary-hide-empty" type="checkbox" onchange="renderResumen()"> Ocultar sin importes</label>
+          <button class="btn" onclick="exportCurrentViewExcel()">Excel</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="summary-table">
+            <thead id="summary-head"></thead>
+            <tbody id="summary-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-cuentas">
+      <div class="page-head">
+        <div>
+          <h2>Cuentas</h2>
+          <p class="muted">Saldo inicial más ingresos, gastos y transferencias.</p>
+        </div>
+        <div class="actions">
+          <button class="btn" onclick="exportCurrentViewExcel()">Excel</button>
+          <button class="btn primary" onclick="openCuenta()">+ Nueva cuenta</button>
+        </div>
+      </div>
+      <div class="grid account-grid" id="account-grid"></div>
     </section>
 
     <section class="page" id="page-categorias">
@@ -1125,6 +1159,90 @@ function renderPresupuesto() {
       <div class="bar"><i style="width:${pct}%;background:${color}"></i></div>
     </div>`;
   }).join('')}</div></div>`;
+}
+const SUMMARY_MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function summaryYears() {
+  const years = new Set([new Date().getFullYear()]);
+  state.movimientos.forEach(m => { if (m.fecha) years.add(Number(m.fecha.slice(0, 4))); });
+  state.presupuestos.forEach(p => { if (p.mes) years.add(Number(p.mes.slice(0, 4))); });
+  return [...years].filter(Boolean).sort((a, b) => b - a);
+}
+function fillSummaryControls() {
+  const yearEl = document.getElementById('summary-year');
+  const selectedYear = yearEl.value || String(new Date().getFullYear());
+  yearEl.innerHTML = summaryYears().map(y => `<option value="${y}" ${String(y) === selectedYear ? 'selected' : ''}>${y}</option>`).join('');
+  const groupEl = document.getElementById('summary-group');
+  const selectedGroup = groupEl.value;
+  const groups = unique(state.categories.map(c => categoryGroup(c.nombre)));
+  groupEl.innerHTML = '<option value="">Todos los grupos</option>' + groups.map(g => `<option value="${esc(g)}" ${g === selectedGroup ? 'selected' : ''}>${esc(g)}</option>`).join('');
+}
+function summaryMatrixValue(cat, month, mode) {
+  if (mode === 'presupuesto' && cat.tipo === 'gasto') {
+    return state.presupuestos.find(p => p.categoria === cat.nombre && p.mes === month)?.monto || 0;
+  }
+  return state.movimientos
+    .filter(m => m.tipo === cat.tipo && m.categoria === cat.nombre && (m.fecha || '').startsWith(month))
+    .reduce((sum, m) => sum + m.monto, 0);
+}
+function summaryRowsForYear(year, mode, group, hideEmpty) {
+  const used = state.movimientos
+    .filter(m => (m.fecha || '').startsWith(String(year)))
+    .map(m => ({ nombre: m.categoria, tipo: m.tipo }));
+  const budgeted = state.presupuestos
+    .filter(p => (p.mes || '').startsWith(String(year)))
+    .map(p => ({ nombre: p.categoria, tipo: 'gasto' }));
+  const map = new Map();
+  [...state.categories, ...used, ...budgeted]
+    .filter(c => ['ingreso', 'gasto'].includes(c.tipo) && c.nombre)
+    .forEach(c => map.set(`${c.tipo}|${c.nombre}`, { nombre: c.nombre, tipo: c.tipo, grupo: categoryGroup(c.nombre) }));
+  return [...map.values()]
+    .filter(c => !group || c.grupo === group)
+    .map(cat => {
+      const values = Array.from({ length: 12 }, (_, i) => summaryMatrixValue(cat, `${year}-${String(i + 1).padStart(2, '0')}`, mode));
+      return { ...cat, values, total: values.reduce((sum, v) => sum + v, 0) };
+    })
+    .filter(row => !hideEmpty || row.total !== 0)
+    .sort((a, b) => a.tipo.localeCompare(b.tipo) || a.grupo.localeCompare(b.grupo, 'es') || a.nombre.localeCompare(b.nombre, 'es'));
+}
+function renderResumen() {
+  ensureStateShape();
+  fillSummaryControls();
+  const year = document.getElementById('summary-year').value || String(new Date().getFullYear());
+  const mode = document.getElementById('summary-mode').value || 'resumen';
+  const group = document.getElementById('summary-group').value;
+  const hideEmpty = document.getElementById('summary-hide-empty').checked;
+  const rows = summaryRowsForYear(year, mode, group, hideEmpty);
+  const monthHeaders = SUMMARY_MONTHS.map(m => `<th class="month-cell">${m}</th>`).join('');
+  document.getElementById('summary-head').innerHTML = `<tr><th class="concept-cell">Concepto</th>${monthHeaders}<th class="total-cell">Total</th></tr>`;
+  if (!rows.length) {
+    document.getElementById('summary-body').innerHTML = `<tr><td colspan="14"><div class="empty">No hay datos para mostrar en ${year}.</div></td></tr>`;
+    return;
+  }
+  const renderRow = row => `<tr>
+    <td class="concept-cell"><span class="summary-dot ${row.tipo}"></span>${esc(row.nombre)}<br><small class="muted">${esc(row.grupo)}</small></td>
+    ${row.values.map(v => `<td class="month-cell ${row.tipo === 'ingreso' ? 'green' : 'red'}">${v ? money(v) : '-'}</td>`).join('')}
+    <td class="total-cell ${row.tipo === 'ingreso' ? 'green' : 'red'}">${money(row.total)}</td>
+  </tr>`;
+  const incomeRows = rows.filter(r => r.tipo === 'ingreso');
+  const expenseRows = rows.filter(r => r.tipo === 'gasto');
+  const monthTotals = tipo => Array.from({ length: 12 }, (_, i) => rows.filter(r => r.tipo === tipo).reduce((sum, r) => sum + r.values[i], 0));
+  const incomeTotals = monthTotals('ingreso');
+  const expenseTotals = monthTotals('gasto');
+  const balances = incomeTotals.map((v, i) => v - expenseTotals[i]);
+  let acc = 0;
+  const accumulated = balances.map(v => acc += v);
+  const totalLine = (label, values, cls) => `<tr class="summary-total"><td class="concept-cell">${label}</td>${values.map(v => `<td class="month-cell ${cls}">${v ? money(v) : '-'}</td>`).join('')}<td class="total-cell ${cls}">${money(values.reduce((s, v) => s + v, 0))}</td></tr>`;
+  document.getElementById('summary-body').innerHTML = `
+    <tr class="summary-section"><td colspan="14">Ingresos</td></tr>
+    ${incomeRows.map(renderRow).join('') || '<tr><td colspan="14"><div class="empty">Sin ingresos.</div></td></tr>'}
+    <tr class="summary-section"><td colspan="14">Gastos</td></tr>
+    ${expenseRows.map(renderRow).join('') || '<tr><td colspan="14"><div class="empty">Sin gastos.</div></td></tr>'}
+    <tr class="summary-section"><td colspan="14">Totales</td></tr>
+    ${totalLine('Total ingresos', incomeTotals, 'green')}
+    ${totalLine('Total gastos', expenseTotals, 'red')}
+    ${totalLine('Saldo mensual', balances, balances.reduce((s, v) => s + v, 0) >= 0 ? 'blue' : 'red')}
+    ${totalLine('Acumulado', accumulated, accumulated.at(-1) >= 0 ? 'blue' : 'red')}
+  `;
 }
 
 function normalizeText(text) {
@@ -1917,6 +2035,7 @@ function showPage(id) {
   if (id === 'importacion') renderImportReview();
   if (id === 'cuentas') renderCuentas();
   if (id === 'presupuesto') renderPresupuesto();
+  if (id === 'resumen') renderResumen();
   if (id === 'categorias') renderCategorias();
   if (id === 'nube') renderCloud();
   if (window.matchMedia('(max-width: 900px)').matches) setSidebarCollapsed(true, false);
@@ -2615,6 +2734,31 @@ function exportCurrentViewExcel() {
       return { Mes: mes, Categoria: categoria, Grupo: categoryGroup(categoria), Usado: usado, Presupuesto: budget ? budget.monto : 0, Diferencia: (budget ? budget.monto : 0) - usado };
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Presupuesto');
+  } else if (active === 'page-resumen') {
+    name = 'resumen';
+    const year = document.getElementById('summary-year').value || String(new Date().getFullYear());
+    const mode = document.getElementById('summary-mode').value || 'resumen';
+    const group = document.getElementById('summary-group').value;
+    const hideEmpty = document.getElementById('summary-hide-empty').checked;
+    const rows = summaryRowsForYear(year, mode, group, hideEmpty).map(r => ({
+      Tipo: r.tipo,
+      Grupo: r.grupo,
+      Concepto: r.nombre,
+      Ene: r.values[0],
+      Feb: r.values[1],
+      Mar: r.values[2],
+      Abr: r.values[3],
+      May: r.values[4],
+      Jun: r.values[5],
+      Jul: r.values[6],
+      Ago: r.values[7],
+      Sep: r.values[8],
+      Oct: r.values[9],
+      Nov: r.values[10],
+      Dic: r.values[11],
+      Total: r.total
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Resumen');
   } else if (active === 'page-categorias') {
     name = 'categorias';
     const rows = state.categories.map(c => ({ Nombre: c.nombre, Tipo: c.tipo, Grupo: c.grupo || '', Recurrente: c.recurrente ? 'Si' : 'No' }));
@@ -2810,6 +2954,7 @@ function refreshAll() {
   renderMovimientos();
   renderCuentas();
   renderPresupuesto();
+  renderResumen();
   renderCategorias();
 }
 
