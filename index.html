@@ -69,6 +69,9 @@
   .brand h1 { font: 700 18px/1.1 Georgia, serif; letter-spacing: -.2px; }
   .brand-title { display: flex; align-items: center; gap: 9px; }
   .brand-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--green-bg); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 32%, var(--border)); font: 700 17px/1 Georgia, serif; }
+  .demo-badge { display: none; color: var(--red); border: 1px solid rgba(178, 54, 54, .35); background: var(--red-bg); border-radius: 999px; padding: 2px 7px; font: 700 11px/1.2 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .05em; }
+  body.demo-mode .demo-badge { display: inline-flex; }
+  .shell.sidebar-collapsed .demo-badge { display: none; }
   .brand p { color: var(--text2); font-size: 12px; margin-top: 3px; }
   .nav { display: grid; gap: 4px; }
   .nav-label { color: var(--text3); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; margin: 8px 8px 2px; }
@@ -231,7 +234,7 @@
   <aside class="sidebar">
     <button class="btn sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Ocultar o mostrar menu" type="button">&#8249;</button>
     <div class="brand">
-      <h1 class="brand-title"><span class="brand-icon">$</span><span>Finanzas Casa</span></h1>
+      <h1 class="brand-title"><span class="brand-icon">$</span><span>Finanzas Casa</span><span class="demo-badge">Demo</span></h1>
       <p>Hogar</p>
     </div>
     <div class="nav">
@@ -677,6 +680,7 @@
 <script>
 const STORAGE_KEY = 'finanzas_hogar_conceptos_v1';
 const CLOUD_CONFIG_KEY = 'finanzas_hogar_supabase_config_v1';
+const IS_DEMO = location.pathname.replace(/\/$/, '') === '/demo';
 const DEFAULT_CLOUD_CONFIG = {
   url: 'https://mnkkearluehndvkudulc.supabase.co',
   anonKey: 'sb_publishable_ELCFM1JVaSE2tU9M0vs45g_hQZnPAOJ'
@@ -710,6 +714,76 @@ let lastReceiptSuggestion = null;
 let selectedMovimientoIds = new Set();
 let summaryOnlyWithBalance = false;
 let currentSummaryDetail = null;
+
+function createDemoState() {
+  const cuentas = [
+    { id: 'demo-banco', nombre: 'Banco Principal', tipo: 'banco', saldoInicial: 18500, color: '#235b9f' },
+    { id: 'demo-efectivo', nombre: 'Efectivo', tipo: 'efectivo', saldoInicial: 4200, color: '#25734b' },
+    { id: 'demo-tarjeta', nombre: 'Tarjeta credito', tipo: 'tarjeta', saldoInicial: 0, color: '#b23636' }
+  ];
+  const categories = [
+    { id: 'demo-cat-sueldo', nombre: 'Sueldo', tipo: 'ingreso', grupo: 'Ingresos', recurrente: false },
+    { id: 'demo-cat-extra', nombre: 'Extra', tipo: 'ingreso', grupo: 'Ingresos', recurrente: false },
+    { id: 'demo-cat-super', nombre: 'Supermercado', tipo: 'gasto', grupo: 'Vida diaria', recurrente: false },
+    { id: 'demo-cat-casa', nombre: 'Gastos casa', tipo: 'gasto', grupo: 'Hogar', recurrente: true },
+    { id: 'demo-cat-servicios', nombre: 'Servicios', tipo: 'gasto', grupo: 'Hogar', recurrente: true },
+    { id: 'demo-cat-transporte', nombre: 'Transporte', tipo: 'gasto', grupo: 'Movilidad', recurrente: false },
+    { id: 'demo-cat-salud', nombre: 'Salud', tipo: 'gasto', grupo: 'Bienestar', recurrente: false },
+    { id: 'demo-cat-ocio', nombre: 'Ocio', tipo: 'gasto', grupo: 'Disfrute', recurrente: false }
+  ];
+  const base = [
+    ['2026-01-02','ingreso','Sueldo','Sueldo mensual',86000,'demo-banco'],
+    ['2026-01-05','gasto','Gastos casa','Alquiler enero',28500,'demo-banco'],
+    ['2026-01-08','gasto','Servicios','UTE y Antel',7200,'demo-banco'],
+    ['2026-01-12','gasto','Supermercado','Compra semanal',8300,'demo-tarjeta'],
+    ['2026-01-18','gasto','Transporte','Nafta y estacionamiento',5200,'demo-tarjeta'],
+    ['2026-01-22','gasto','Ocio','Salida familiar',3900,'demo-efectivo'],
+    ['2026-02-02','ingreso','Sueldo','Sueldo mensual',86000,'demo-banco'],
+    ['2026-02-06','gasto','Gastos casa','Alquiler febrero',28500,'demo-banco'],
+    ['2026-02-09','gasto','Servicios','OSE, UTE y fibra',7600,'demo-banco'],
+    ['2026-02-13','gasto','Supermercado','Supermercado',9100,'demo-tarjeta'],
+    ['2026-02-19','gasto','Salud','Farmacia',2400,'demo-efectivo'],
+    ['2026-03-02','ingreso','Sueldo','Sueldo mensual',89500,'demo-banco'],
+    ['2026-03-04','ingreso','Extra','Trabajo extra',12000,'demo-banco'],
+    ['2026-03-06','gasto','Gastos casa','Alquiler marzo',29500,'demo-banco'],
+    ['2026-03-10','gasto','Servicios','Servicios hogar',7400,'demo-banco'],
+    ['2026-03-15','gasto','Supermercado','Compra mensual',11600,'demo-tarjeta'],
+    ['2026-03-20','gasto','Transporte','Transporte',4700,'demo-efectivo'],
+    ['2026-04-02','ingreso','Sueldo','Sueldo mensual',89500,'demo-banco'],
+    ['2026-04-06','gasto','Gastos casa','Alquiler abril',29500,'demo-banco'],
+    ['2026-04-08','gasto','Servicios','Servicios hogar',8100,'demo-banco'],
+    ['2026-04-12','gasto','Supermercado','Supermercado',10400,'demo-tarjeta'],
+    ['2026-04-21','gasto','Ocio','Paseo fin de semana',6100,'demo-tarjeta'],
+    ['2026-05-02','ingreso','Sueldo','Sueldo mensual',91000,'demo-banco'],
+    ['2026-05-06','gasto','Gastos casa','Alquiler mayo',30500,'demo-banco'],
+    ['2026-05-09','gasto','Servicios','UTE, OSE, Antel',8350,'demo-banco'],
+    ['2026-05-14','gasto','Supermercado','Supermercado',9800,'demo-tarjeta'],
+    ['2026-05-18','gasto','Salud','Consulta medica',3200,'demo-banco']
+  ];
+  const movimientos = base.map((m, i) => ({
+    id: `demo-mov-${i + 1}`,
+    fecha: m[0],
+    tipo: m[1],
+    concepto: m[2],
+    categoria: m[2],
+    desc: m[3],
+    monto: m[4],
+    cuentaId: m[5],
+    notas: 'Dato ficticio'
+  }));
+  const presupuestos = [];
+  ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'].forEach(mes => {
+    [
+      ['Gastos casa', 30500],
+      ['Servicios', 8500],
+      ['Supermercado', 12000],
+      ['Transporte', 6000],
+      ['Salud', 4500],
+      ['Ocio', 6500]
+    ].forEach(([categoria, monto]) => presupuestos.push({ key: `${mes}_${categoria}`, mes, categoria, monto }));
+  });
+  return { cuentas, movimientos, presupuestos, deletedMovimientos: [], deletedCuentas: [], categories, aiRules: [] };
+}
 
 function unique(values) {
   return [...new Set(values.map(v => String(v || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
@@ -1801,6 +1875,7 @@ function mergeFinanceStates(localData, cloudData) {
   return merged;
 }
 function scheduleCloudSync(delay = 1500) {
+  if (IS_DEMO) return;
   if (applyingCloudState || !cloudSession || !supabaseClient) return;
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer = setTimeout(() => syncCloudNow(true), delay);
@@ -2052,6 +2127,11 @@ function categoryForDescription(desc, tipo) {
   return defaultCategory(tipo);
 }
 function load() {
+  if (IS_DEMO) {
+    state = createDemoState();
+    ensureStateShape();
+    return;
+  }
   try { state = { ...state, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') }; } catch {}
   ensureStateShape();
   if (!state.cuentas.length) {
@@ -2064,6 +2144,10 @@ function load() {
 }
 function save() {
   ensureStateShape();
+  if (IS_DEMO) {
+    renderSidebar();
+    return;
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   renderSidebar();
   scheduleCloudSync();
@@ -2121,14 +2205,14 @@ function setSidebarCollapsed(collapsed, remember = true) {
   if (!shell) return;
   shell.classList.toggle('sidebar-collapsed', collapsed);
   document.getElementById('sidebar-toggle').textContent = collapsed ? '›' : '‹';
-  if (remember) localStorage.setItem('finanzas_sidebar_collapsed', collapsed ? '1' : '0');
+  if (remember && !IS_DEMO) localStorage.setItem('finanzas_sidebar_collapsed', collapsed ? '1' : '0');
 }
 function toggleSidebar() {
   const shell = document.getElementById('app-shell');
   setSidebarCollapsed(!shell.classList.contains('sidebar-collapsed'));
 }
 function configureSidebar() {
-  const saved = localStorage.getItem('finanzas_sidebar_collapsed');
+  const saved = IS_DEMO ? null : localStorage.getItem('finanzas_sidebar_collapsed');
   const mobile = window.matchMedia('(max-width: 900px)').matches;
   setSidebarCollapsed(saved === null ? mobile : saved === '1', false);
 }
@@ -2857,6 +2941,13 @@ function exportCurrentViewExcel() {
   XLSX.writeFile(wb, `finanzas_hogar_${name}_${today()}.xlsx`);
 }
 function updateAuthUI() {
+  if (IS_DEMO) {
+    document.body.classList.add('demo-mode');
+    document.getElementById('auth-screen')?.classList.add('hidden');
+    document.getElementById('app-shell')?.classList.remove('hidden');
+    refreshAll();
+    return;
+  }
   const logged = Boolean(cloudSession);
   document.getElementById('auth-screen')?.classList.toggle('hidden', logged);
   document.getElementById('app-shell')?.classList.toggle('hidden', !logged);
@@ -2866,6 +2957,11 @@ function updateAuthUI() {
   }
 }
 async function initSupabase() {
+  if (IS_DEMO) {
+    cloudSession = null;
+    updateAuthUI();
+    return true;
+  }
   const config = getCloudConfig();
   if (!config.url || !config.anonKey || !window.supabase) {
     supabaseClient = null;
@@ -3041,7 +3137,8 @@ configureSidebar();
 window.addEventListener('resize', configureSidebar);
 refreshSelectors();
 refreshAll();
-initSupabase().catch(() => {});
+if (IS_DEMO) updateAuthUI();
+else initSupabase().catch(() => {});
 </script>
 </body>
 </html>
