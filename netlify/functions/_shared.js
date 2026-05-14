@@ -1,4 +1,4 @@
-const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || process.env.NETLIFY_AI_GATEWAY_BASE_URL || 'https://api.openai.com/v1';
 const OPENAI_URL = `${OPENAI_BASE_URL.replace(/\/$/, '')}/responses`;
 const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
@@ -17,12 +17,13 @@ function json(statusCode, body) {
 
 function getOpenAIHeaders() {
   const headers = { 'Content-Type': 'application/json' };
-  if (process.env.OPENAI_API_KEY) headers.Authorization = `Bearer ${process.env.OPENAI_API_KEY}`;
+  const apiKey = process.env.OPENAI_API_KEY || process.env.NETLIFY_AI_GATEWAY_KEY;
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
   return headers;
 }
 
 function requireOpenAIAccess() {
-  if (!process.env.OPENAI_BASE_URL && !process.env.OPENAI_API_KEY) {
+  if (!process.env.OPENAI_BASE_URL && !process.env.OPENAI_API_KEY && !process.env.NETLIFY_AI_GATEWAY_BASE_URL && !process.env.NETLIFY_AI_GATEWAY_KEY) {
     const err = new Error('Enable Netlify AI Gateway or set OPENAI_API_KEY');
     err.statusCode = 500;
     throw err;
