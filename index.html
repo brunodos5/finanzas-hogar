@@ -330,6 +330,25 @@
           </table>
         </div>
       </div>
+      <div class="page-head" style="margin-top:18px;">
+        <div>
+          <h2>Resumen recurrente</h2>
+          <p class="muted">Planilla anual solo con gastos recurrentes.</p>
+        </div>
+        <div class="actions">
+          <select id="recurring-summary-year" onchange="renderRecurrentesPage()"></select>
+          <select id="recurring-summary-group" onchange="renderRecurrentesPage()"></select>
+          <button class="btn" id="recurring-empty-btn" onclick="toggleRecurringSummaryEmpty()">Ver sin monto</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="summary-table">
+            <thead id="recurring-summary-head"></thead>
+            <tbody id="recurring-summary-body"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <section class="page" id="page-movimientos">
@@ -761,6 +780,7 @@ let bankImportRows = [];
 let lastReceiptSuggestion = null;
 let selectedMovimientoIds = new Set();
 let summaryOnlyWithBalance = false;
+let recurringSummaryIncludeEmpty = false;
 let currentSummaryDetail = null;
 
 function createDemoState() {
@@ -2432,6 +2452,65 @@ function recurrentRowsForMonth(month) {
     return { cat, grupo: (cat.grupo || '').trim() || 'Sin grupo', rows, total, last };
   }).sort((a, b) => a.grupo.localeCompare(b.grupo, 'es') || a.cat.nombre.localeCompare(b.cat.nombre, 'es'));
 }
+function fillRecurringSummaryControls() {
+  const yearEl = document.getElementById('recurring-summary-year');
+  const groupEl = document.getElementById('recurring-summary-group');
+  if (!yearEl || !groupEl) return;
+  const selectedYear = yearEl.value || String(new Date().getFullYear());
+  yearEl.innerHTML = summaryYears().map(y => `<option value="${y}" ${String(y) === selectedYear ? 'selected' : ''}>${y}</option>`).join('');
+  const selectedGroup = groupEl.value;
+  const groups = unique(getCategories('gasto').filter(c => c.recurrente).map(c => categoryGroup(c.nombre)));
+  groupEl.innerHTML = '<option value="">Todos los grupos</option>' + groups.map(g => `<option value="${esc(g)}" ${g === selectedGroup ? 'selected' : ''}>${esc(g)}</option>`).join('');
+}
+function recurringSummaryRowsForYear(year, group, includeEmpty) {
+  return getCategories('gasto')
+    .filter(c => c.recurrente)
+    .map(cat => {
+      const values = Array.from({ length: 12 }, (_, i) => summaryMatrixValue({ nombre: cat.nombre, tipo: 'gasto' }, `${year}-${String(i + 1).padStart(2, '0')}`, 'resumen'));
+      return { nombre: cat.nombre, tipo: 'gasto', grupo: categoryGroup(cat.nombre), values, total: values.reduce((sum, v) => sum + v, 0) };
+    })
+    .filter(row => (!group || row.grupo === group) && (includeEmpty || row.total !== 0))
+    .sort((a, b) => a.grupo.localeCompare(b.grupo, 'es') || a.nombre.localeCompare(b.nombre, 'es'));
+}
+function renderRecurringSummary() {
+  fillRecurringSummaryControls();
+  const year = document.getElementById('recurring-summary-year')?.value || String(new Date().getFullYear());
+  const group = document.getElementById('recurring-summary-group')?.value || '';
+  const rows = recurringSummaryRowsForYear(year, group, recurringSummaryIncludeEmpty);
+  const btn = document.getElementById('recurring-empty-btn');
+  if (btn) {
+    btn.classList.toggle('active-filter', recurringSummaryIncludeEmpty);
+    btn.textContent = recurringSummaryIncludeEmpty ? 'Mostrando sin monto' : 'Ver sin monto';
+  }
+  const head = document.getElementById('recurring-summary-head');
+  const body = document.getElementById('recurring-summary-body');
+  if (!head || !body) return;
+  const monthHeaders = SUMMARY_MONTHS.map(m => `<th class="month-cell">${m}</th>`).join('');
+  head.innerHTML = `<tr><th class="concept-cell">Categoria</th>${monthHeaders}<th class="total-cell">Total</th></tr>`;
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="14"><div class="empty">${recurringSummaryIncludeEmpty ? 'No hay gastos recurrentes para mostrar.' : 'No hay recurrentes con monto en ' + year + '. Usa "Ver sin monto" para ver los pendientes.'}</div></td></tr>`;
+    return;
+  }
+  const groupTotals = Array.from({ length: 12 }, (_, i) => rows.reduce((sum, row) => sum + row.values[i], 0));
+  body.innerHTML = `${rows.map((row, index) => {
+    const showGroup = index === 0 || rows[index - 1].grupo !== row.grupo;
+    return `${showGroup ? `<tr class="summary-section"><td colspan="14">${esc(row.grupo)}</td></tr>` : ''}
+    <tr>
+      <td class="concept-cell"><span class="summary-dot gasto"></span>${esc(row.nombre)}<br><small class="muted">${esc(row.grupo)}</small></td>
+      ${row.values.map((v, i) => {
+        const month = `${year}-${String(i + 1).padStart(2, '0')}`;
+        return `<td class="month-cell red">${v ? `<button class="summary-value-btn" onclick="openSummaryDetail('${encodeURIComponent(row.nombre)}','gasto','${month}')">${money(v)}</button>` : '-'}</td>`;
+      }).join('')}
+      <td class="total-cell red">${row.total ? money(row.total) : '-'}</td>
+    </tr>`;
+  }).join('')}
+  <tr class="summary-section"><td colspan="14">Total recurrente</td></tr>
+  <tr class="summary-total"><td class="concept-cell">Total gastos recurrentes</td>${groupTotals.map(v => `<td class="month-cell red">${v ? money(v) : '-'}</td>`).join('')}<td class="total-cell red">${money(groupTotals.reduce((s, v) => s + v, 0))}</td></tr>`;
+}
+function toggleRecurringSummaryEmpty() {
+  recurringSummaryIncludeEmpty = !recurringSummaryIncludeEmpty;
+  renderRecurringSummary();
+}
 function renderRecurrentesPage() {
   refreshSelectors();
   const month = document.getElementById('recurring-month').value || currentMonth();
@@ -2439,6 +2518,7 @@ function renderRecurrentesPage() {
   const body = document.getElementById('recurrentes-body');
   if (!items.length) {
     body.innerHTML = '<tr><td colspan="6"><div class="empty">Todavia no marcaste categorias de gasto como recurrentes.</div></td></tr>';
+    renderRecurringSummary();
     return;
   }
   body.innerHTML = items.map(({ cat, grupo, rows, total, last }, index) => {
@@ -2456,6 +2536,7 @@ function renderRecurrentesPage() {
     </tr>
   `;
   }).join('');
+  renderRecurringSummary();
 }
 function renderRows(tbody, movs, withActions = true) {
   if (!movs.length) {
@@ -3080,6 +3161,26 @@ function exportCurrentViewExcel() {
       Monto: total
     }));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Recurrentes');
+    const year = document.getElementById('recurring-summary-year').value || String(new Date().getFullYear());
+    const group = document.getElementById('recurring-summary-group').value || '';
+    const summaryRows = recurringSummaryRowsForYear(year, group, recurringSummaryIncludeEmpty).map(r => ({
+      Grupo: r.grupo,
+      Categoria: r.nombre,
+      Ene: r.values[0],
+      Feb: r.values[1],
+      Mar: r.values[2],
+      Abr: r.values[3],
+      May: r.values[4],
+      Jun: r.values[5],
+      Jul: r.values[6],
+      Ago: r.values[7],
+      Sep: r.values[8],
+      Oct: r.values[9],
+      Nov: r.values[10],
+      Dic: r.values[11],
+      Total: r.total
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Resumen recurrente');
   } else {
     return exportExcel();
   }
