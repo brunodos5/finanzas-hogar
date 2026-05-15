@@ -11,5 +11,8 @@
   "devDependencies": {
     "vite": "^7.1.0",
     "vite-plugin-pwa": "^1.0.3"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^10.7.6"
   }
 }
