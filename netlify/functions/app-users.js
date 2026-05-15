@@ -83,7 +83,7 @@ function publicUser(user) {
 }
 
 async function getUsers() {
-  const store = getStore({ name: STORE_NAME, consistency: 'strong' });
+  const store = getStore(STORE_NAME);
   const stored = await store.get(USERS_KEY, { type: 'json' });
   const users = Array.isArray(stored?.users) ? stored.users.map(normalizeUser).filter(Boolean) : [];
   if (!users.some(user => user.username === 'bruno')) users.unshift(defaultUsers()[0]);
@@ -91,7 +91,7 @@ async function getUsers() {
 }
 
 async function saveUsers(users) {
-  const store = getStore({ name: STORE_NAME, consistency: 'strong' });
+  const store = getStore(STORE_NAME);
   await store.setJSON(USERS_KEY, { users, updatedAt: new Date().toISOString() });
 }
 
