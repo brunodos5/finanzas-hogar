@@ -2267,6 +2267,9 @@ function normalizeUsername(value) {
 function userIsAdmin() {
   return currentAppUser?.role === 'admin';
 }
+function requiresServerAppUsers() {
+  return !IS_DEMO && !['localhost', '127.0.0.1', ''].includes(location.hostname);
+}
 async function appUsersRequest(payload, auth = true) {
   const headers = { 'Content-Type': 'application/json' };
   if (auth && currentAppToken) headers.Authorization = `Bearer ${currentAppToken}`;
@@ -2321,6 +2324,10 @@ function restoreAppSession() {
     const stored = JSON.parse(rawStored || 'null');
     if (!stored) return;
     const token = sessionUser ? sessionStorage.getItem(APP_USER_TOKEN_SESSION_KEY) : localStorage.getItem(APP_USER_TOKEN_PERSIST_KEY);
+    if (requiresServerAppUsers() && !token) {
+      clearAppSession();
+      return;
+    }
     const user = state.appUsers.find(u => u.id === stored.id && u.active !== false);
     if (user) {
       currentAppUser = { id: user.id, username: user.username, role: user.role || stored.role || 'user' };
@@ -2744,6 +2751,7 @@ async function saveAppUser() {
   const duplicate = state.appUsers.find(u => u.id !== editingUserId && normalizeUsername(u.username) === username);
   if (duplicate) return toast('Ese usuario ya existe.');
   if (!editingUserId && !password) return toast('Ingresa una contraseña.');
+  if (requiresServerAppUsers() && !currentAppToken) return toast('Cerrá sesión y volvé a entrar como administrador.');
   if (currentAppToken) {
     try {
       const data = await appUsersRequest({ action: 'save', id: editingUserId, username, role, active, password });
