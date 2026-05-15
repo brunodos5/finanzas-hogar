@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { getStore } = require('@netlify/blobs');
+const { connectLambda, getStore } = require('@netlify/blobs');
 const { json, requireAllowedOrigin, parseJsonBody } = require('./_shared');
 
 const STORE_NAME = 'finanzas-casa-users';
@@ -114,6 +114,7 @@ exports.handler = async event => {
 
   try {
     requireAllowedOrigin(event);
+    connectLambda(event);
     const body = parseJsonBody(event, 20000);
     const action = body.action;
     const users = await getUsers();
