@@ -42,8 +42,8 @@
   html { color-scheme: light; background: var(--bg); }
   body { min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
   button, input, select, textarea { font: inherit; color-scheme: light; }
-  .shell { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; min-height: 100dvh; }
-  .shell.sidebar-collapsed { grid-template-columns: 64px 1fr; }
+  .shell { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: 100vh; min-height: 100dvh; max-width: 100vw; overflow-x: hidden; }
+  .shell.sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr); }
   .sidebar { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--green-bg) 18%, var(--surface)) 0%, var(--surface) 38%); border-right: 1px solid var(--border); padding: 18px 12px; display: flex; flex-direction: column; gap: 18px; overflow: hidden; }
   .sidebar, .shell { transition: grid-template-columns .18s ease; }
   .sidebar-toggle { align-self: flex-end; width: 34px; height: 34px; justify-content: center; padding: 0; font-size: 20px; line-height: 1; }
@@ -78,7 +78,8 @@
   .sidebar-total { margin-top: auto; background: color-mix(in srgb, var(--green-bg) 28%, var(--surface2)); border: 1px solid color-mix(in srgb, var(--green) 22%, var(--border)); border-radius: 8px; padding: 12px; }
   .sidebar-total span { display: block; color: var(--text2); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
   .sidebar-total strong { display: block; font: 700 24px/1.2 Georgia, serif; margin-top: 2px; }
-  main { padding: 26px 30px 40px; overflow: auto; }
+  main { min-width: 0; width: 100%; padding: 26px 30px 40px; overflow: auto; }
+  .page { min-width: 0; max-width: 100%; }
   .page { display: none; }
   .page.active { display: block; }
   .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
@@ -116,7 +117,7 @@
   .card-body { padding: 16px; }
   .two-col { grid-template-columns: 1fr 1fr; margin-bottom: 16px; }
   .chart-box { height: 220px; position: relative; }
-  .table-wrap { overflow-x: auto; }
+  .table-wrap { width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; }
   th { background: var(--surface2); color: var(--text2); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; text-align: left; padding: 10px 12px; white-space: nowrap; }
   td { border-top: 1px solid var(--border); padding: 11px 12px; vertical-align: middle; }
@@ -231,6 +232,9 @@
   .home-widget ul { list-style: none; display: grid; gap: 8px; color: var(--text2); }
   .home-widget li { overflow-wrap: anywhere; }
   .home-balance-value { font-weight: 800; font-size: 13px; }
+  .home-finance-widget .movement-info { display: grid; gap: 2px; min-width: 0; }
+  .home-finance-widget .movement-info strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .home-finance-widget .movement-info span { color: var(--text2); font-size: 11px; overflow-wrap: anywhere; }
   .compact-list { display: grid; gap: 8px; }
   .compact-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; background: color-mix(in srgb, var(--surface2) 32%, transparent); min-width: 0; }
   .compact-row.pending { border-color: rgba(178, 54, 54, .35); background: var(--red-bg); }
@@ -259,7 +263,8 @@
   }
   @media (max-width: 900px) {
     body { font-size: 15px; }
-    .shell, .shell.sidebar-collapsed { grid-template-columns: 1fr; }
+    html, body { max-width: 100%; overflow-x: hidden; }
+    .shell, .shell.sidebar-collapsed { grid-template-columns: minmax(0, 1fr); }
     .sidebar { position: sticky; top: 0; z-index: 10; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px; border-right: 0; border-bottom: 1px solid var(--border); padding: 9px 10px calc(9px + env(safe-area-inset-top, 0px)); overflow: visible; box-shadow: 0 8px 22px rgba(28, 25, 23, .06); }
     .sidebar-toggle { display: inline-flex; order: 2; margin-left: auto; align-self: center; width: 42px; height: 42px; font-size: 15px; border-color: color-mix(in srgb, var(--green) 34%, var(--border2)); background: var(--green-bg); color: var(--green); }
     .sidebar-total, .brand p, .nav-label { display: none; }
@@ -275,7 +280,7 @@
     body.demo-mode .shell.sidebar-collapsed .brand-title::after { display: inline-flex; }
     .app-toolbar { min-height: 34px; margin-bottom: 10px; }
     .back-floating { min-height: 34px; }
-    main { padding: 12px 10px calc(22px + env(safe-area-inset-bottom, 0px)); overflow: visible; }
+    main { max-width: 100vw; padding: 12px 10px calc(22px + env(safe-area-inset-bottom, 0px)); overflow: hidden; }
     .metrics, .two-col { grid-template-columns: 1fr; }
     .metrics { gap: 8px; margin-bottom: 10px; }
     .metric { padding: 10px 12px; }
@@ -286,7 +291,7 @@
     .home-quick-actions .btn { min-height: 40px; padding: 7px 8px; font-size: 13px; line-height: 1.2; }
     h2 { font-size: 22px; }
     .page > .card, .page > .grid, .menu-panel > .card, .mateo-panel > .card { margin-bottom: 10px; }
-    .card, .home-widget, .grid { min-width: 0; max-width: 100%; }
+    .card, .home-widget, .grid, .two-col > *, #page-dashboard, #page-dashboard > * { min-width: 0; max-width: 100%; }
     .card-head { padding: 9px 10px; flex-wrap: wrap; align-items: flex-start; }
     .card-body { padding: 10px; }
     .home-widgets, .module-grid, .menu-hero, .shopping-grid, .account-grid { grid-template-columns: 1fr; gap: 8px; }
@@ -321,16 +326,21 @@
     #page-home .home-finance-widget .table-wrap { margin: 0; width: 100%; overflow: hidden; }
     #page-home .home-finance-widget table { table-layout: fixed; width: 100%; }
     #page-home .home-finance-widget th, #page-home .home-finance-widget td { padding: 7px 6px; min-width: 0; }
-    #page-home .home-finance-widget th:nth-child(1), #page-home .home-finance-widget td:nth-child(1) { width: 74px; }
-    #page-home .home-finance-widget th:nth-child(3), #page-home .home-finance-widget td:nth-child(3) { width: 96px; }
-    #page-home .home-finance-widget td:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #page-home .home-finance-widget thead { display: none; }
+    #page-home .home-finance-widget th:nth-child(1), #page-home .home-finance-widget td:nth-child(1) { width: 66px; white-space: nowrap; }
+    #page-home .home-finance-widget th:nth-child(3), #page-home .home-finance-widget td:nth-child(3) { width: 88px; white-space: nowrap; }
+    #page-home .home-finance-widget td:nth-child(2) { overflow: hidden; }
+    #page-home .home-finance-widget .movement-info strong { font-size: 13px; }
+    #page-home .home-finance-widget .movement-info span { font-size: 11px; }
     #page-home .home-finance-widget .right { text-align: right; }
     #page-menu .menu-panel[data-menu-panel="home"] .module-card { grid-template-columns: minmax(0, 1fr) auto; }
     #page-menu .menu-panel[data-menu-panel="home"] .module-card .btn { white-space: nowrap; }
     .compact-list { gap: 6px; }
     .compact-row { align-items: flex-start; padding: 7px 8px; gap: 8px; }
     .chart-box { height: 220px; }
-    .table-wrap { margin: 0 -2px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-wrap { margin: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #page-dashboard .card { overflow: hidden; }
+    #page-dashboard .table-wrap table { width: max-content; min-width: 100%; }
     th, td { padding: 7px 8px; }
     .modal-backdrop { padding: 8px; align-items: flex-end; }
     .modal { width: 100%; max-height: 90dvh; border-radius: 12px 12px 8px 8px; }
@@ -1381,6 +1391,7 @@ const DELETE_MARKERS = [
   'deletedShoppingItems',
   'deletedShoppingCategories',
   'deletedMateoData',
+  'deletedMateoDataIds',
   'deletedMateoMedicamentos',
   'deletedMateoMedicos',
   'deletedMateoRegalos',
@@ -2729,6 +2740,7 @@ function ensureStateShape(options = {}) {
   if (!Array.isArray(state.mateoMedicos)) state.mateoMedicos = [];
   if (!Array.isArray(state.mateoRegalos)) state.mateoRegalos = [];
   if (!Array.isArray(state.mateoMeriendas)) state.mateoMeriendas = [];
+  state.mateoData = state.mateoData.filter(item => !state.deletedMateoData.includes(deletionKeyFor('mateoData', item)) && !state.deletedMateoDataIds.includes(item.id));
   if (!state.mateoDataInitialized && !state.mateoData.length) {
     state.mateoData = ['Altura', 'Peso', 'Talle de calzado', 'Talle de buzo', 'Talle pantalón']
       .map(nombre => ({ id: uid(), nombre, valor: '' }));
@@ -3143,7 +3155,7 @@ function renderHome() {
   movements.innerHTML = latest.length ? latest.map(m => {
     const cls = m.tipo === 'ingreso' ? 'green' : m.tipo === 'gasto' ? 'red' : 'blue';
     const sign = m.tipo === 'ingreso' ? '+' : m.tipo === 'gasto' ? '-' : '';
-    return `<tr><td>${dateFmt(m.fecha)}</td><td>${esc(m.desc || m.categoria || '')}</td><td class="right ${cls}"><strong>${sign} ${money(m.monto)}</strong></td></tr>`;
+    return `<tr><td>${dateFmt(m.fecha)}</td><td><div class="movement-info"><strong>${esc(m.desc || m.categoria || '')}</strong><span>${esc(m.categoria || m.tipo || '')}</span></div></td><td class="right ${cls}"><strong>${sign} ${money(m.monto)}</strong></td></tr>`;
   }).join('') : '<tr><td colspan="3"><div class="empty">Sin movimientos todavía.</div></td></tr>';
   shopping.innerHTML = renderShoppingCards(2);
   const nextMeriendas = state.mateoMeriendas.slice().sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || ''))).slice(0, 6);
@@ -3842,6 +3854,7 @@ function saveMateoData() {
   const valor = document.getElementById('mateo-data-value').value.trim();
   if (!nombre) return toast('Ingresá una categoría.');
   forgetDeleted('deletedMateoData', deletionKeyFor('mateoData', { nombre }));
+  if (id) forgetDeleted('deletedMateoDataIds', id);
   if (id) {
     const item = state.mateoData.find(row => row.id === id);
     if (item) Object.assign(item, { nombre, valor });
@@ -3853,8 +3866,11 @@ function saveMateoData() {
 }
 function deleteMateoData(id) {
   const item = state.mateoData.find(item => item.id === id);
-  if (item) rememberDeleted('deletedMateoData', deletionKeyFor('mateoData', item));
-  state.mateoData = state.mateoData.filter(item => item.id !== id);
+  const deletedKey = deletionKeyFor('mateoData', item);
+  if (item) rememberDeleted('deletedMateoData', deletedKey);
+  rememberDeleted('deletedMateoDataIds', id);
+  state.mateoDataInitialized = true;
+  state.mateoData = state.mateoData.filter(item => item.id !== id && deletionKeyFor('mateoData', item) !== deletedKey);
   save();
   renderMateo();
   toast('Dato eliminado');
@@ -5013,7 +5029,9 @@ function mergeFinanceStates(localData, cloudData) {
       .filter(i => !deleted.deletedShoppingItems.includes(deletionKeyFor('shoppingItems', i)) && !deleted.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', i.categoria)))
       .map(i => ({ ...i })),
     shoppingCategories: unique(local.shoppingCategories.concat(cloud.shoppingCategories)).filter(c => !deleted.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', c))),
-    mateoData: local.mateoData.filter(i => !deleted.deletedMateoData.includes(deletionKeyFor('mateoData', i))).map(i => ({ ...i })),
+    mateoData: local.mateoData
+      .filter(i => !deleted.deletedMateoData.includes(deletionKeyFor('mateoData', i)) && !deleted.deletedMateoDataIds.includes(i.id))
+      .map(i => ({ ...i })),
     mateoDataInitialized: local.mateoDataInitialized || cloud.mateoDataInitialized,
     mateoMedicamentos: local.mateoMedicamentos.filter(i => !deleted.deletedMateoMedicamentos.includes(deletionKeyFor('mateoMedicamentos', i))).map(i => ({ ...i })),
     mateoMedicos: local.mateoMedicos.filter(i => !deleted.deletedMateoMedicos.includes(deletionKeyFor('mateoMedicos', i))).map(i => ({ ...i })),
@@ -5040,7 +5058,7 @@ function mergeFinanceStates(localData, cloudData) {
   mergeByIdOrKey(merged.appUsers, cloud.appUsers, u => normalizeUsername(u.username));
   mergeByIdOrKey(merged.menuDays, cloud.menuDays.filter(d => !merged.deletedMenuDays.includes(deletionKeyFor('menuDays', d))), d => d.fecha);
   mergeByIdOrKey(merged.shoppingItems, cloud.shoppingItems.filter(i => !merged.deletedShoppingItems.includes(deletionKeyFor('shoppingItems', i)) && !merged.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', i.categoria))), i => `${normalizeKey(i.categoria)}|${normalizeKey(i.item)}`);
-  mergeByIdOrKey(merged.mateoData, cloud.mateoData.filter(i => !merged.deletedMateoData.includes(deletionKeyFor('mateoData', i))), i => normalizeKey(i.nombre));
+  mergeByIdOrKey(merged.mateoData, cloud.mateoData.filter(i => !merged.deletedMateoData.includes(deletionKeyFor('mateoData', i)) && !merged.deletedMateoDataIds.includes(i.id)), i => normalizeKey(i.nombre));
   mergeByIdOrKey(merged.mateoMedicamentos, cloud.mateoMedicamentos.filter(i => !merged.deletedMateoMedicamentos.includes(deletionKeyFor('mateoMedicamentos', i))), i => normalizeKey(i.texto));
   mergeByIdOrKey(merged.mateoMedicos, cloud.mateoMedicos.filter(i => !merged.deletedMateoMedicos.includes(deletionKeyFor('mateoMedicos', i))), i => normalizeKey(i.texto));
   mergeByIdOrKey(merged.mateoRegalos, cloud.mateoRegalos.filter(i => !merged.deletedMateoRegalos.includes(deletionKeyFor('mateoRegalos', i))), i => normalizeKey(i.texto));
