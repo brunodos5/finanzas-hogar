@@ -409,10 +409,15 @@
   </aside>
 
   <main>
-    <div class="home-quick-actions">
+    <div class="home-quick-actions" data-quick-actions="main">
       <button class="btn primary" onclick="openMovimiento()">+ Movimiento</button>
       <button class="btn" onclick="openComprobante()">Foto / movimiento</button>
       <button class="btn" onclick="openShoppingItemModal()">+ Compra</button>
+    </div>
+    <div class="home-quick-actions hidden" data-quick-actions="mateo">
+      <button class="btn primary" onclick="openMateoListModal('regalos')">+ Regalo</button>
+      <button class="btn" onclick="openMateoListModal('medicos')">+ Agenda</button>
+      <button class="btn" onclick="openMateoListModal('medicamentos')">+ Medicamento</button>
     </div>
     <div class="app-toolbar">
       <button class="btn back-floating" id="app-back-btn" onclick="goBackInApp()" disabled>← Volver</button>
@@ -2923,6 +2928,11 @@ function updateBackButton() {
   const btn = document.getElementById('app-back-btn');
   if (btn) btn.disabled = !appHistory.length;
 }
+function updateQuickActions(pageId = document.querySelector('.page.active')?.id.replace('page-', '') || 'home') {
+  document.querySelectorAll('[data-quick-actions]').forEach(group => {
+    group.classList.toggle('hidden', group.dataset.quickActions !== (pageId === 'mateo' ? 'mateo' : 'main'));
+  });
+}
 function goBackInApp() {
   const previous = appHistory.pop();
   if (!previous) return updateBackButton();
@@ -2955,6 +2965,7 @@ function showPage(id, options = {}) {
   if (id === 'nube') renderCloud();
   if (id === 'usuarios') renderUsers();
   if (window.matchMedia('(max-width: 900px)').matches) setSidebarCollapsed(true, false);
+  updateQuickActions(id);
   updateBackButton();
 }
 function setSidebarCollapsed(collapsed, remember = true) {
@@ -4962,6 +4973,7 @@ window.addEventListener('resize', configureSidebar);
 refreshSelectors();
 refreshAll();
 updateSidebarContext(document.querySelector('.page.active')?.id.replace('page-', '') || 'home');
+updateQuickActions();
 updateBackButton();
 if (IS_DEMO) updateAuthUI();
 else initSupabase().catch(() => {});
