@@ -117,6 +117,7 @@
   .card-body { padding: 16px; }
   .two-col { grid-template-columns: 1fr 1fr; margin-bottom: 16px; }
   .chart-box { height: 220px; position: relative; }
+  .chart-box canvas { display: block; max-width: 100% !important; }
   .table-wrap { width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; }
   th { background: var(--surface2); color: var(--text2); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; text-align: left; padding: 10px 12px; white-space: nowrap; }
@@ -291,7 +292,7 @@
     .home-quick-actions .btn { min-height: 40px; padding: 7px 8px; font-size: 13px; line-height: 1.2; }
     h2 { font-size: 22px; }
     .page > .card, .page > .grid, .menu-panel > .card, .mateo-panel > .card { margin-bottom: 10px; }
-    .card, .home-widget, .grid, .two-col > *, #page-dashboard, #page-dashboard > * { min-width: 0; max-width: 100%; }
+    .card, .card-body, .home-widget, .grid, .two-col > *, #page-dashboard, #page-dashboard > * { min-width: 0; max-width: 100%; }
     .card-head { padding: 9px 10px; flex-wrap: wrap; align-items: flex-start; }
     .card-body { padding: 10px; }
     .home-widgets, .module-grid, .menu-hero, .shopping-grid, .account-grid { grid-template-columns: 1fr; gap: 8px; }
@@ -340,7 +341,18 @@
     .chart-box { height: 220px; }
     .table-wrap { margin: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     #page-dashboard .card { overflow: hidden; }
-    #page-dashboard .table-wrap table { width: max-content; min-width: 100%; }
+    #page-dashboard .chart-box canvas { width: 100% !important; height: 100% !important; }
+    #page-dashboard .table-wrap { overflow: hidden; }
+    #page-dashboard .table-wrap table { display: block; width: 100%; min-width: 0; }
+    #page-dashboard .table-wrap thead { display: none; }
+    #page-dashboard .table-wrap tbody { display: grid; gap: 8px; width: 100%; }
+    #page-dashboard .table-wrap tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--surface2) 28%, transparent); }
+    #page-dashboard .table-wrap td { display: block; border: 0; padding: 0; min-width: 0; background: transparent; }
+    #page-dashboard .table-wrap td:nth-child(1) { grid-column: 1; color: var(--text2); font-size: 12px; }
+    #page-dashboard .table-wrap td:nth-child(2) { grid-column: 1; font-weight: 700; overflow-wrap: anywhere; }
+    #page-dashboard .table-wrap td:nth-child(3), #page-dashboard .table-wrap td:nth-child(4) { grid-column: 1; color: var(--text2); font-size: 12px; }
+    #page-dashboard .table-wrap td:nth-child(3) .badge { max-width: 100%; }
+    #page-dashboard .table-wrap td:nth-child(5) { grid-column: 2; grid-row: 1 / span 4; align-self: center; white-space: nowrap; }
     th, td { padding: 7px 8px; }
     .modal-backdrop { padding: 8px; align-items: flex-end; }
     .modal { width: 100%; max-height: 90dvh; border-radius: 12px 12px 8px 8px; }
@@ -1387,15 +1399,21 @@ function unique(values) {
 }
 const DELETE_MARKERS = [
   'deletedCategories',
+  'deletedCategoryIds',
   'deletedMenuDays',
   'deletedShoppingItems',
+  'deletedShoppingItemIds',
   'deletedShoppingCategories',
   'deletedMateoData',
   'deletedMateoDataIds',
   'deletedMateoMedicamentos',
+  'deletedMateoMedicamentoIds',
   'deletedMateoMedicos',
+  'deletedMateoMedicoIds',
   'deletedMateoRegalos',
-  'deletedMateoMeriendas'
+  'deletedMateoRegaloIds',
+  'deletedMateoMeriendas',
+  'deletedMateoMeriendaIds'
 ];
 function deletionKeyFor(collection, item) {
   if (collection === 'categories') return `${normalizeKey(item?.tipo)}|${normalizeKey(item?.nombre)}`;
@@ -1424,6 +1442,23 @@ function mergeDeleteMarkers(local, cloud, merged) {
   DELETE_MARKERS.forEach(key => {
     merged[key] = [...new Set([...(local[key] || []), ...(cloud[key] || [])])];
   });
+}
+function applyDeleteMarkers(target = state) {
+  ensureDeleteMarkers(target);
+  target.categories = (target.categories || []).filter(item => !target.deletedCategoryIds.includes(item.id) && !target.deletedCategories.includes(deletionKeyFor('categories', item)));
+  target.menuDays = (target.menuDays || []).filter(item => !target.deletedMenuDays.includes(deletionKeyFor('menuDays', item)));
+  target.shoppingItems = (target.shoppingItems || []).filter(item =>
+    !target.deletedShoppingItemIds.includes(item.id) &&
+    !target.deletedShoppingItems.includes(deletionKeyFor('shoppingItems', item)) &&
+    !target.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', item.categoria))
+  );
+  target.shoppingCategories = (target.shoppingCategories || []).filter(item => !target.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', item)));
+  target.mateoData = (target.mateoData || []).filter(item => !target.deletedMateoDataIds.includes(item.id) && !target.deletedMateoData.includes(deletionKeyFor('mateoData', item)));
+  target.mateoMedicamentos = (target.mateoMedicamentos || []).filter(item => !target.deletedMateoMedicamentoIds.includes(item.id) && !target.deletedMateoMedicamentos.includes(deletionKeyFor('mateoMedicamentos', item)));
+  target.mateoMedicos = (target.mateoMedicos || []).filter(item => !target.deletedMateoMedicoIds.includes(item.id) && !target.deletedMateoMedicos.includes(deletionKeyFor('mateoMedicos', item)));
+  target.mateoRegalos = (target.mateoRegalos || []).filter(item => !target.deletedMateoRegaloIds.includes(item.id) && !target.deletedMateoRegalos.includes(deletionKeyFor('mateoRegalos', item)));
+  target.mateoMeriendas = (target.mateoMeriendas || []).filter(item => !target.deletedMateoMeriendaIds.includes(item.id) && !target.deletedMateoMeriendas.includes(deletionKeyFor('mateoMeriendas', item)));
+  return target;
 }
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -2740,7 +2775,7 @@ function ensureStateShape(options = {}) {
   if (!Array.isArray(state.mateoMedicos)) state.mateoMedicos = [];
   if (!Array.isArray(state.mateoRegalos)) state.mateoRegalos = [];
   if (!Array.isArray(state.mateoMeriendas)) state.mateoMeriendas = [];
-  state.mateoData = state.mateoData.filter(item => !state.deletedMateoData.includes(deletionKeyFor('mateoData', item)) && !state.deletedMateoDataIds.includes(item.id));
+  applyDeleteMarkers();
   if (!state.mateoDataInitialized && !state.mateoData.length) {
     state.mateoData = ['Altura', 'Peso', 'Talle de calzado', 'Talle de buzo', 'Talle pantalón']
       .map(nombre => ({ id: uid(), nombre, valor: '' }));
@@ -3356,6 +3391,7 @@ function guardarCategoria() {
   const duplicate = state.categories.find(c => c.id !== editingCategoriaId && c.tipo === tipo && normalizeKey(c.nombre) === normalizeKey(nombre));
   if (duplicate) return toast('Esa categoría ya existe.');
   forgetDeleted('deletedCategories', deletionKeyFor('categories', { tipo, nombre }));
+  if (editingCategoriaId) forgetDeleted('deletedCategoryIds', editingCategoriaId);
   if (editingCategoriaId) {
     const cat = state.categories.find(c => c.id === editingCategoriaId);
     const oldName = cat.nombre;
@@ -3375,6 +3411,7 @@ function eliminarCategoria() {
   const used = state.movimientos.some(m => m.categoria === cat.nombre) || state.presupuestos.some(p => p.categoria === cat.nombre);
   if (used && !confirm('Esta categoría tiene movimientos o presupuestos. Si la eliminás, esos registros quedan con la categoría guardada pero ya no aparecerá como opción. ¿Continuar?')) return;
   rememberDeleted('deletedCategories', deletionKeyFor('categories', cat));
+  rememberDeleted('deletedCategoryIds', cat.id);
   state.categories = state.categories.filter(c => c.id !== editingCategoriaId);
   save();
   closeModal('modal-categoria');
@@ -3630,6 +3667,7 @@ function saveShoppingItemFromModal() {
   if (!item) return toast('Ingresá un producto.');
   forgetDeleted('deletedShoppingItems', deletionKeyFor('shoppingItems', { categoria, item }));
   forgetDeleted('deletedShoppingCategories', deletionKeyFor('shoppingCategories', categoria));
+  if (id) forgetDeleted('deletedShoppingItemIds', id);
   if (id) {
     const row = state.shoppingItems.find(i => i.id === id);
     if (row) Object.assign(row, { item, cantidad, categoria, notas });
@@ -3691,6 +3729,7 @@ function addShoppingItem() {
 function deleteShoppingItem(id) {
   const item = state.shoppingItems.find(item => item.id === id);
   if (item) rememberDeleted('deletedShoppingItems', deletionKeyFor('shoppingItems', item));
+  rememberDeleted('deletedShoppingItemIds', id);
   state.shoppingItems = state.shoppingItems.filter(item => item.id !== id);
   save();
   renderMenu();
@@ -3906,8 +3945,10 @@ function saveMateoListItem() {
 function deleteMateoListItem(kind, id) {
   const key = mateoListKey(kind);
   const marker = { medicamentos: 'deletedMateoMedicamentos', medicos: 'deletedMateoMedicos', regalos: 'deletedMateoRegalos' }[kind];
+  const idMarker = { medicamentos: 'deletedMateoMedicamentoIds', medicos: 'deletedMateoMedicoIds', regalos: 'deletedMateoRegaloIds' }[kind];
   const item = state[key].find(item => item.id === id);
   if (marker && item) rememberDeleted(marker, deletionKeyFor(key, item));
+  if (idMarker) rememberDeleted(idMarker, id);
   state[key] = state[key].filter(item => item.id !== id);
   save();
   renderMateo();
@@ -3980,8 +4021,10 @@ function saveMateoListItem() {
   const mesAgenda = document.getElementById('mateo-list-month').value;
   const key = mateoListKey(kind);
   const marker = { medicamentos: 'deletedMateoMedicamentos', medicos: 'deletedMateoMedicos', regalos: 'deletedMateoRegalos' }[kind];
+  const idMarker = { medicamentos: 'deletedMateoMedicamentoIds', medicos: 'deletedMateoMedicoIds', regalos: 'deletedMateoRegaloIds' }[kind];
   if (!texto) return toast('Ingresá un detalle.');
   if (marker) forgetDeleted(marker, deletionKeyFor(key, { texto }));
+  if (idMarker && id) forgetDeleted(idMarker, id);
   if (id) {
     const item = state[key].find(row => row.id === id);
     if (item) Object.assign(item, { texto, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) });
@@ -4014,6 +4057,7 @@ function renderMateoMeriendas() {
 function deleteMateoMerienda(id) {
   const item = state.mateoMeriendas.find(item => item.id === id);
   if (item) rememberDeleted('deletedMateoMeriendas', deletionKeyFor('mateoMeriendas', item));
+  rememberDeleted('deletedMateoMeriendaIds', id);
   state.mateoMeriendas = state.mateoMeriendas.filter(item => item.id !== id);
   save();
   renderMateo();
@@ -5064,7 +5108,7 @@ function mergeFinanceStates(localData, cloudData) {
   mergeByIdOrKey(merged.mateoRegalos, cloud.mateoRegalos.filter(i => !merged.deletedMateoRegalos.includes(deletionKeyFor('mateoRegalos', i))), i => normalizeKey(i.texto));
   mergeByIdOrKey(merged.mateoMeriendas, cloud.mateoMeriendas.filter(i => !merged.deletedMateoMeriendas.includes(deletionKeyFor('mateoMeriendas', i))), i => i.fecha);
   merged.shoppingCategories = unique(merged.shoppingCategories.concat(merged.shoppingItems.map(i => i.categoria))).filter(c => !merged.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', c)));
-  return merged;
+  return applyDeleteMarkers(merged);
 }
 async function downloadFromCloud() {
   if (!(await requireCloudSession())) return;
