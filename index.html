@@ -3910,7 +3910,9 @@ function deleteMateoData(id) {
   rememberDeleted('deletedMateoDataIds', id);
   state.mateoDataInitialized = true;
   state.mateoData = state.mateoData.filter(item => item.id !== id && deletionKeyFor('mateoData', item) !== deletedKey);
+  applyDeleteMarkers();
   save();
+  applyDeleteMarkers();
   renderMateo();
   toast('Dato eliminado');
 }
@@ -3950,11 +3952,14 @@ function deleteMateoListItem(kind, id) {
   if (marker && item) rememberDeleted(marker, deletionKeyFor(key, item));
   if (idMarker) rememberDeleted(idMarker, id);
   state[key] = state[key].filter(item => item.id !== id);
+  applyDeleteMarkers();
   save();
+  applyDeleteMarkers();
   renderMateo();
   toast('Eliminado');
 }
 function renderMateo() {
+  ensureStateShape();
   document.querySelectorAll('[data-mateo-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.mateoPanel === currentMateoView));
   document.querySelectorAll('[data-mateo-btn]').forEach(btn => btn.classList.toggle('active', btn.dataset.mateoBtn === currentMateoView));
   const dataBody = document.getElementById('mateo-data-body');
@@ -4059,7 +4064,9 @@ function deleteMateoMerienda(id) {
   if (item) rememberDeleted('deletedMateoMeriendas', deletionKeyFor('mateoMeriendas', item));
   rememberDeleted('deletedMateoMeriendaIds', id);
   state.mateoMeriendas = state.mateoMeriendas.filter(item => item.id !== id);
+  applyDeleteMarkers();
   save();
+  applyDeleteMarkers();
   renderMateo();
   toast('Merienda eliminada');
 }
