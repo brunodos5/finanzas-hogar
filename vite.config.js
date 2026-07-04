@@ -7,8 +7,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest: {
-        name: 'Finanzas Casa',
-        short_name: 'Finanzas Casa',
+        name: 'Gestión del Hogar',
+        short_name: 'Gestión Hogar',
         display: 'standalone',
         start_url: '/',
         scope: '/',

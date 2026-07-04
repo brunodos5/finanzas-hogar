@@ -8,8 +8,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Finanzas Casa">
-<title>Finanzas Casa</title>
+<meta name="apple-mobile-web-app-title" content="Gestión del Hogar">
+<title>Gestión del Hogar</title>
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <script src="/vendor/chart.umd.js"></script>
@@ -40,9 +40,9 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { color-scheme: light; background: var(--bg); }
-  body { min-height: 100vh; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  body { min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
   button, input, select, textarea { font: inherit; color-scheme: light; }
-  .shell { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; }
+  .shell { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; min-height: 100dvh; }
   .shell.sidebar-collapsed { grid-template-columns: 64px 1fr; }
   .sidebar { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--green-bg) 18%, var(--surface)) 0%, var(--surface) 38%); border-right: 1px solid var(--border); padding: 18px 12px; display: flex; flex-direction: column; gap: 18px; overflow: hidden; }
   .sidebar, .shell { transition: grid-template-columns .18s ease; }
@@ -56,6 +56,7 @@
   .brand h1 { font: 700 18px/1.1 Georgia, serif; letter-spacing: -.2px; }
   .brand-title { display: flex; align-items: center; gap: 9px; }
   .brand-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--green-bg); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 32%, var(--border)); font: 700 17px/1 Georgia, serif; }
+  .brand-icon svg { width: 19px; height: 19px; display: block; }
   body.demo-mode .brand-title::after { content: "Demo"; display: inline-flex; color: var(--red); border: 1px solid rgba(178, 54, 54, .35); background: var(--red-bg); border-radius: 999px; padding: 2px 7px; font: 700 11px/1.2 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .05em; }
   .shell.sidebar-collapsed .brand-title::after { display: none; }
   .brand p { color: var(--text2); font-size: 12px; margin-top: 3px; }
@@ -63,7 +64,17 @@
   .nav-label { color: var(--text3); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; margin: 8px 8px 2px; }
   .nav button { display: flex; align-items: center; gap: 8px; border: 1px solid transparent; background: transparent; color: var(--text2); border-radius: 6px; padding: 9px 10px; cursor: pointer; text-align: left; }
   .nav button:hover { background: color-mix(in srgb, var(--green-bg) 22%, var(--surface2)); color: var(--text); border-color: color-mix(in srgb, var(--green) 28%, transparent); }
+  .app-toolbar { display: flex; justify-content: flex-end; align-items: center; min-height: 30px; margin-bottom: 12px; }
+  .back-floating { width: fit-content; min-height: 30px; padding: 5px 10px; font-size: 12px; border-color: #0b5f58; background: #0b5f58; color: #fff; box-shadow: 0 8px 18px rgba(11, 95, 88, .16); }
+  .back-floating:hover { background: #084b46; color: #fff; }
+  .back-floating:disabled { display: none; }
   .nav button.active { background: var(--green-bg); color: var(--green); border-color: color-mix(in srgb, var(--green) 45%, transparent); font-weight: 700; }
+  .nav-config { display: grid; gap: 4px; margin-top: 4px; }
+  .nav-config summary { cursor: pointer; color: var(--text3); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; margin: 8px 8px 2px; list-style: none; }
+  .nav-config summary::-webkit-details-marker { display: none; }
+  .nav-config summary::after { content: " v"; font-size: 10px; }
+  .nav-config[open] summary::after { content: " ^"; }
+  .nav-config button { width: 100%; }
   .sidebar-total { margin-top: auto; background: color-mix(in srgb, var(--green-bg) 28%, var(--surface2)); border: 1px solid color-mix(in srgb, var(--green) 22%, var(--border)); border-radius: 8px; padding: 12px; }
   .sidebar-total span { display: block; color: var(--text2); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
   .sidebar-total strong { display: block; font: 700 24px/1.2 Georgia, serif; margin-top: 2px; }
@@ -71,6 +82,10 @@
   .page { display: none; }
   .page.active { display: block; }
   .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+  .page > .card, .page > .grid, .menu-panel > .card, .mateo-panel > .card { margin-bottom: 16px; }
+  .page > .card:last-child, .page > .grid:last-child, .menu-panel > .card:last-child, .mateo-panel > .card:last-child { margin-bottom: 0; }
+  .home-quick-actions { display: flex; justify-content: flex-end; align-items: center; gap: 6px; flex-wrap: nowrap; margin: -4px 0 8px; }
+  .home-quick-actions .btn { min-height: 0; padding: 5px 9px; font-size: 12px; line-height: 1.2; white-space: nowrap; }
   h2 { font: 700 25px/1.15 Georgia, serif; letter-spacing: -.3px; }
   .muted { color: var(--text2); }
   .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -182,27 +197,149 @@
   .summary-value-btn { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0; text-align: right; font: inherit; font-weight: inherit; }
   .summary-value-btn:hover { text-decoration: underline; }
   .btn.active-filter { background: var(--green-bg); color: var(--green); border-color: color-mix(in srgb, var(--green) 42%, var(--border)); font-weight: 700; }
+  .menu-hero { grid-template-columns: repeat(2, minmax(220px, 1fr)); margin-bottom: 16px; }
+  .meal-card { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 14px; display: grid; gap: 10px; cursor: default; }
+  .meal-card.today { border-color: color-mix(in srgb, var(--green) 42%, var(--border)); background: color-mix(in srgb, var(--green-bg) 34%, var(--surface)); }
+  .meal-date { display: flex; justify-content: space-between; gap: 10px; color: var(--text2); font-size: 12px; }
+  .meal-slot { border-top: 1px solid var(--border); padding-top: 10px; display: grid; gap: 3px; }
+  .meal-slot span { color: var(--text3); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+  .meal-slot strong { font-size: 15px; }
+  .shopping-link { cursor: pointer; border-color: color-mix(in srgb, var(--blue) 30%, var(--border)); }
+  .shopping-link:hover { background: color-mix(in srgb, var(--blue-bg) 36%, var(--surface)); }
+  .shopping-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  .shopping-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--surface); }
+  .shopping-card strong { display: block; margin-bottom: 8px; }
+  .shopping-card ul { list-style: none; display: grid; gap: 6px; color: var(--text2); }
+  .shopping-line { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .shopping-line:first-child { border-top: 0; padding-top: 0; }
+  .shopping-line.done .shopping-text { text-decoration: line-through; opacity: .55; }
+  .shopping-text { min-width: 0; }
+  .shopping-actions { display: inline-flex; gap: 5px; flex-shrink: 0; }
+  .module-grid { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .module-card { min-height: 118px; padding: 14px; cursor: pointer; display: grid; align-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  .module-card:hover { border-color: var(--border2); background: color-mix(in srgb, var(--surface2) 24%, var(--surface)); }
+  .module-card strong { display: block; font: 700 20px/1.1 Georgia, serif; margin-bottom: 4px; }
+  .module-card p { font-size: 13px; line-height: 1.3; }
+  .module-card .btn { min-height: 36px; padding: 6px 10px; font-size: 12px; }
+  .module-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; background: var(--green-bg); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 28%, var(--border)); font: 700 20px/1 Georgia, serif; margin-bottom: 8px; }
+  .module-icon.food { background: var(--amber-bg); color: var(--amber); border-color: color-mix(in srgb, var(--amber) 30%, var(--border)); }
+  .module-icon.child { background: var(--blue-bg); color: var(--blue); border-color: color-mix(in srgb, var(--blue) 30%, var(--border)); }
+  .module-icon svg { width: 21px; height: 21px; display: block; }
+  .home-widgets { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 16px; }
+  .home-widget { cursor: pointer; min-height: 0; }
+  .home-widget:hover { border-color: var(--border2); background: color-mix(in srgb, var(--surface2) 24%, var(--surface)); }
+  .home-widget ul { list-style: none; display: grid; gap: 8px; color: var(--text2); }
+  .home-widget li { overflow-wrap: anywhere; }
+  .compact-list { display: grid; gap: 8px; }
+  .compact-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; background: color-mix(in srgb, var(--surface2) 32%, transparent); min-width: 0; }
+  .compact-row.pending { border-color: rgba(178, 54, 54, .35); background: var(--red-bg); }
+  .compact-row.pending span, .compact-row.pending strong { color: var(--red); }
+  .compact-row span { min-width: 0; overflow-wrap: anywhere; color: var(--text2); }
+  .compact-row strong { color: var(--text); }
+  .menu-panel { display: none; }
+  .menu-panel.active { display: block; }
+  .mateo-panel { display: none; }
+  .mateo-panel.active { display: block; }
+  #page-home > .module-grid .module-card { grid-template-columns: 1fr; gap: 0; }
+  #page-home > .module-grid .module-card > div { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 10px; }
+  #page-home > .module-grid .module-card > div > p { grid-column: 2; }
+  #page-home > .module-grid .module-card .module-icon { grid-row: 1 / span 2; margin-bottom: 0; }
+  #page-home > .module-grid .module-card > .btn { display: none; }
+  #page-menu .menu-panel[data-menu-panel="home"] .module-card { grid-template-columns: minmax(0, 1fr) auto; align-items: center; align-content: center; }
+  #page-menu .menu-panel[data-menu-panel="home"] .module-card .btn { white-space: nowrap; }
+  @media (min-width: 901px) {
+    #page-home.page.active { display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: 16px; }
+    #page-home > .page-head, #page-home > .module-grid { grid-column: 1 / -1; margin-bottom: 0; }
+    #page-home > .home-widgets { display: contents; }
+    #page-home .home-finance-widget { order: 1; }
+    #page-home .home-meals-widget { order: 2; }
+    #page-home .home-meriendas-widget { order: 3; margin-top: 0 !important; }
+    #page-home .home-shopping-widget { order: 4; grid-column: 1 / -1; }
+  }
   @media (max-width: 900px) {
+    body { font-size: 15px; }
     .shell, .shell.sidebar-collapsed { grid-template-columns: 1fr; }
-    .sidebar { position: sticky; top: 0; z-index: 10; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 10px; border-right: 0; border-bottom: 1px solid var(--border); padding: 10px; overflow: visible; }
-    .sidebar-toggle { display: inline-flex; order: 2; margin-left: auto; align-self: center; width: 38px; height: 38px; font-size: 15px; }
+    .sidebar { position: sticky; top: 0; z-index: 10; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px; border-right: 0; border-bottom: 1px solid var(--border); padding: 9px 10px calc(9px + env(safe-area-inset-top, 0px)); overflow: visible; box-shadow: 0 8px 22px rgba(28, 25, 23, .06); }
+    .sidebar-toggle { display: inline-flex; order: 2; margin-left: auto; align-self: center; width: 42px; height: 42px; font-size: 15px; border-color: color-mix(in srgb, var(--green) 34%, var(--border2)); background: var(--green-bg); color: var(--green); }
     .sidebar-total, .brand p, .nav-label { display: none; }
     .brand { flex: 1 1 auto; min-width: 0; order: 1; }
+    .brand h1 { font-size: 16px; }
     .brand-title { white-space: nowrap; }
-    .nav { order: 3; flex: 1 0 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-height: calc(100vh - 78px); overflow-y: auto; padding-top: 4px; }
+    .brand-icon { width: 34px; height: 34px; }
+    .nav { order: 3; flex: 1 0 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 7px; max-height: calc(100dvh - 72px); overflow-y: auto; padding: 4px 0 2px; -webkit-overflow-scrolling: touch; }
     .shell.sidebar-collapsed .nav { display: none; }
-    .nav button, .shell.sidebar-collapsed .nav button { width: 100%; height: auto; min-width: 0; justify-content: center; padding: 9px 8px; font-size: 12px; text-align: center; }
+    .nav button, .shell.sidebar-collapsed .nav button { width: 100%; min-height: 44px; min-width: 0; justify-content: center; padding: 10px 8px; font-size: 14px; text-align: center; border-color: var(--border); background: color-mix(in srgb, var(--surface) 86%, var(--green-bg)); }
     .shell.sidebar-collapsed .nav button::before { content: none; }
     .shell.sidebar-collapsed .brand-title span:not(.brand-icon) { display: inline; }
     body.demo-mode .shell.sidebar-collapsed .brand-title::after { display: inline-flex; }
-    main { padding: 18px 14px; }
+    .app-toolbar { min-height: 34px; margin-bottom: 10px; }
+    .back-floating { min-height: 34px; }
+    main { padding: 12px 10px calc(22px + env(safe-area-inset-bottom, 0px)); overflow: visible; }
     .metrics, .two-col { grid-template-columns: 1fr; }
+    .metrics { gap: 8px; margin-bottom: 10px; }
+    .metric { padding: 10px 12px; }
+    .metric span { font-size: 10px; }
+    .metric strong { font-size: 20px; margin-top: 2px; }
+    .page-head { align-items: stretch; gap: 8px; margin-bottom: 10px; }
+    .home-quick-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+    .home-quick-actions .btn { min-height: 40px; padding: 7px 8px; font-size: 13px; line-height: 1.2; }
+    h2 { font-size: 22px; }
+    .page > .card, .page > .grid, .menu-panel > .card, .mateo-panel > .card { margin-bottom: 10px; }
+    .card-head { padding: 9px 10px; flex-wrap: wrap; align-items: flex-start; }
+    .card-body { padding: 10px; }
+    .home-widgets, .module-grid, .menu-hero, .shopping-grid, .account-grid { grid-template-columns: 1fr; gap: 8px; }
+    .module-grid { gap: 7px; }
+    .module-card { min-height: 0; padding: 10px; gap: 7px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; align-content: center; }
+    .module-card strong { font-size: 18px; margin-bottom: 1px; }
+    .module-card p { font-size: 13px; line-height: 1.25; }
+    .module-card .btn { min-height: 38px; padding: 7px 10px; font-size: 13px; }
+    .module-icon { width: 32px; height: 32px; margin-bottom: 5px; }
+    .module-icon svg { width: 19px; height: 19px; }
+    .home-widget { min-height: 0; }
+    #page-home > .module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    #page-home > .module-grid .module-card { grid-template-columns: 1fr; gap: 0; padding: 9px 6px; text-align: center; }
+    #page-home > .module-grid .module-card > div { display: grid; justify-items: center; gap: 5px; }
+    #page-home > .module-grid .module-card > div > p { display: none; }
+    #page-home > .module-grid .module-card .module-icon { margin-bottom: 0; }
+    #page-home > .module-grid .module-card strong { font-size: 15px; margin: 0; }
+    #page-home > .module-grid .module-card > .btn { display: none; }
+    #page-home .home-meals-widget { order: 1; }
+    #page-home .home-shopping-widget { order: 2; }
+    #page-home .home-finance-widget { order: 3; }
+    #page-home .home-meriendas-widget { order: 4; }
+    #page-home .home-meals-widget .card-body { padding: 8px; }
+    #page-home .home-meals-widget #home-meals { gap: 6px; }
+    #page-home .home-meals-widget .meal-card { padding: 8px; gap: 6px; }
+    #page-home .home-meals-widget .meal-date { font-size: 11px; }
+    #page-home .home-meals-widget .meal-slot { padding-top: 6px; gap: 1px; }
+    #page-home .home-meals-widget .meal-slot strong { font-size: 13px; }
+    #page-menu .menu-panel[data-menu-panel="home"] .module-card { grid-template-columns: minmax(0, 1fr) auto; }
+    #page-menu .menu-panel[data-menu-panel="home"] .module-card .btn { white-space: nowrap; }
+    .compact-list { gap: 6px; }
+    .compact-row { align-items: flex-start; padding: 7px 8px; gap: 8px; }
+    .chart-box { height: 220px; }
+    .table-wrap { margin: 0 -2px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    th, td { padding: 7px 8px; }
+    .modal-backdrop { padding: 8px; align-items: flex-end; }
+    .modal { width: 100%; max-height: 90dvh; border-radius: 12px 12px 8px 8px; }
+    .modal-head, .modal-foot { padding: 11px 12px; }
+    .modal-body { padding: 12px; }
+    .modal-foot { flex-wrap: wrap; }
+    input, select, textarea { font-size: 16px; min-height: 42px; }
+    .btn { min-height: 42px; justify-content: center; }
+    .btn.sm { min-height: 34px; }
+    .toast { left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); text-align: center; }
   }
   @media (max-width: 620px) {
     .page-head, .actions { display: grid; width: 100%; }
+    .actions .btn, .actions input, .actions select { width: 100%; }
     .form-grid { grid-template-columns: 1fr; }
     .import-tools { grid-template-columns: 1fr; }
     .type-switch { grid-template-columns: 1fr; }
+    .brand-title { max-width: calc(100vw - 74px); overflow: hidden; text-overflow: ellipsis; }
+    .modal-foot .btn { flex: 1 1 140px; }
+    .compact-row { display: grid; gap: 6px; }
+    .right { text-align: left; }
   }
 </style>
 </head>
@@ -210,43 +347,60 @@
 <div class="auth-screen hidden" id="auth-screen">
   <div class="auth-card">
     <div>
-      <h1>Finanzas Casa</h1>
-      <p class="muted">Ingresa con tu usuario para acceder a Finanzas Casa.</p>
+      <h1>Gestión del Hogar</h1>
+      <p class="muted">Ingresá con tu usuario para acceder a Gestión del Hogar.</p>
     </div>
     <label>Usuario<input id="auth-email" autocomplete="username" placeholder="usuario"></label>
     <label>Contraseña<input id="auth-password" type="password" autocomplete="current-password" placeholder="Contraseña"></label>
-    <label class="check-row"><input id="auth-remember" type="checkbox" checked> Mantener sesion iniciada</label>
+    <label class="check-row"><input id="auth-remember" type="checkbox" checked> Mantener sesión iniciada</label>
     <div class="actions">
       <button class="btn primary" onclick="loginWithPassword()">Entrar</button>
     </div>
-    <div class="status-box" id="auth-status">Ingresa tu usuario y contraseña.</div>
+    <div class="status-box" id="auth-status">Ingresá tu usuario y contraseña.</div>
   </div>
 </div>
 
 <div class="shell hidden" id="app-shell">
   <aside class="sidebar">
-    <button class="btn sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Ocultar o mostrar menu" type="button">&#8249;</button>
+    <button class="btn sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Ocultar o mostrar menú" type="button">&#8249;</button>
     <div class="brand">
-      <h1 class="brand-title"><span class="brand-icon">$</span><span>Finanzas Casa</span></h1>
+      <h1 class="brand-title"><span class="brand-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10.5V20h13v-9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9.5 20v-6h5v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span>Gestión del Hogar</span></h1>
       <p>Hogar</p>
     </div>
     <div class="nav">
-      <div class="nav-label">Principal</div>
-      <button class="active" data-icon="⌂" data-page-btn="dashboard" onclick="showPage('dashboard')">Inicio</button>
-      <button data-icon="≡" data-page-btn="movimientos" onclick="showPage('movimientos')">Movimientos</button>
-      <button data-icon="▥" data-page-btn="presupuesto" onclick="showPage('presupuesto')">Presupuesto</button>
-      <button data-icon="Σ" data-page-btn="resumen" onclick="showPage('resumen')">Resumen</button>
-      <button data-icon="▣" data-page-btn="cuentas" onclick="showPage('cuentas')">Cuentas</button>
-      <button data-icon="R" data-page-btn="recurrentes" onclick="showPage('recurrentes')">Recurrentes</button>
-      <button data-icon="C" data-page-btn="categorias" onclick="showPage('categorias')">Categorias</button>
-      <button data-icon="N" data-page-btn="nube" data-admin-only="true" onclick="showPage('nube')">Nube</button>
-      <button data-icon="U" data-page-btn="usuarios" data-admin-only="true" onclick="showPage('usuarios')">Usuarios</button>
-      <div class="nav-label">Cargar</div>
-      <button data-icon="◉" onclick="openComprobante()">Camara / comprobante</button>
-      <button data-icon="⇩" onclick="openImport()">Estado bancario</button>
-      <button data-icon="X" onclick="exportExcel()">Descargar Excel</button>
-      <div class="nav-label">Cuenta</div>
-      <button data-icon="↩" onclick="signOutCloud()">Cerrar sesion</button>
+      <div class="nav-label" data-nav-scope="global">Principal</div>
+      <button class="active" data-icon="P" data-nav-scope="global" data-page-btn="home" onclick="showPage('home')">Principal</button>
+      <button data-icon="F" data-nav-scope="home" data-page-btn="dashboard" onclick="showPage('dashboard')">Finanzas</button>
+      <button data-icon="M" data-nav-scope="home" data-page-btn="menu" onclick="showMenuView('home')">Menú</button>
+      <button data-icon="M" data-nav-scope="home" data-page-btn="mateo" onclick="showMateoView('home')">Mateo</button>
+      <div class="nav-label" data-nav-scope="menu">Menú</div>
+      <button data-icon="D" data-nav-scope="menu" data-menu-btn="plan" onclick="showMenuView('plan')">Plan de comidas</button>
+      <button data-icon="L" data-nav-scope="menu" data-menu-btn="lugares" onclick="showMenuView('lugares')">Lista de compras</button>
+      <button data-icon="T" data-nav-scope="menu" data-menu-btn="categorias" onclick="showMenuView('categorias')">Categorías compras</button>
+      <div class="nav-label" data-nav-scope="mateo">Mateo</div>
+      <button data-icon="P" data-nav-scope="mateo" data-mateo-btn="home" onclick="showMateoView('home')">Principal</button>
+      <button data-icon="D" data-nav-scope="mateo" data-mateo-btn="datos" onclick="showMateoView('datos')">Datos</button>
+      <button data-icon="M" data-nav-scope="mateo" data-mateo-btn="medicamentos" onclick="showMateoView('medicamentos')">Medicamentos</button>
+      <button data-icon="A" data-nav-scope="mateo" data-mateo-btn="medicos" onclick="showMateoView('medicos')">Agenda médicos</button>
+      <button data-icon="R" data-nav-scope="mateo" data-mateo-btn="regalos" onclick="showMateoView('regalos')">Posibles regalos</button>
+      <button data-icon="E" data-nav-scope="mateo" data-mateo-btn="meriendas" onclick="showMateoView('meriendas')">Meriendas</button>
+      <div class="nav-label" data-nav-scope="finance">Finanzas</div>
+      <button data-icon="=" data-nav-scope="finance" data-page-btn="movimientos" onclick="showPage('movimientos')">Movimientos</button>
+      <button data-icon="P" data-nav-scope="finance" data-page-btn="presupuesto" onclick="showPage('presupuesto')">Presupuesto</button>
+      <button data-icon="R" data-nav-scope="finance" data-page-btn="resumen" onclick="showPage('resumen')">Resumen</button>
+      <button data-icon="C" data-nav-scope="finance" data-page-btn="cuentas" onclick="showPage('cuentas')">Cuentas</button>
+      <button data-icon="R" data-nav-scope="finance" data-page-btn="recurrentes" onclick="showPage('recurrentes')">Recurrentes</button>
+      <button data-icon="T" data-nav-scope="finance" data-page-btn="categorias" onclick="showPage('categorias')">Categorías</button>
+      <div class="nav-label" data-nav-scope="finance">Cargar</div>
+      <button data-icon="C" data-nav-scope="finance" onclick="openComprobante()">Cámara / comprobante</button>
+      <button data-icon="B" data-nav-scope="finance" onclick="openImport()">Estado bancario</button>
+      <details class="nav-config" data-nav-scope="global finance menu mateo">
+        <summary>Configuración</summary>
+        <button data-icon="X" onclick="exportExcel()">Descargar Excel</button>
+        <button data-icon="N" data-page-btn="nube" onclick="showPage('nube')">Nube</button>
+        <button data-icon="U" data-admin-only="true" data-page-btn="usuarios" onclick="showPage('usuarios')">Usuarios</button>
+        <button data-icon="S" onclick="signOutCloud()">Cerrar sesión</button>
+      </details>
     </div>
     <div class="sidebar-total">
       <span>Balance total</span>
@@ -255,11 +409,138 @@
   </aside>
 
   <main>
-    <section class="page active" id="page-dashboard">
+    <div class="home-quick-actions">
+      <button class="btn primary" onclick="openMovimiento()">+ Movimiento</button>
+      <button class="btn" onclick="openComprobante()">Sacar foto</button>
+      <button class="btn" onclick="openImport()">Subir estado</button>
+    </div>
+    <div class="app-toolbar">
+      <button class="btn back-floating" id="app-back-btn" onclick="goBackInApp()" disabled>← Volver</button>
+    </div>
+    <section class="page active" id="page-home">
+      <div class="page-head">
+        <div>
+          <h2>Principal</h2>
+          <p class="muted">Elegí con qué módulo querés trabajar.</p>
+        </div>
+      </div>
+      <div class="grid module-grid">
+        <div class="module-card" onclick="showPage('dashboard')" role="button" tabindex="0">
+          <div>
+            <span class="module-icon">$</span>
+            <strong>Finanzas</strong>
+            <p class="muted">Movimientos, presupuesto, cuentas, resumen y comprobantes.</p>
+          </div>
+          <button class="btn primary" type="button">Entrar</button>
+        </div>
+        <div class="module-card" onclick="showMenuView('home')" role="button" tabindex="0">
+          <div>
+            <span class="module-icon food"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4.5 3v5.5A2.5 2.5 0 0 0 7 11a2.5 2.5 0 0 0 2.5-2.5V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 11v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3v18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3c2.2 1.4 3.2 3.5 3 6.2-.1 1.7-1.3 3.1-3 3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+            <strong>Menú</strong>
+            <p class="muted">Plan de comidas y lista de compras por lugar.</p>
+          </div>
+          <button class="btn primary" type="button">Entrar</button>
+        </div>
+        <div class="module-card" onclick="showMateoView('home')" role="button" tabindex="0">
+          <div>
+            <span class="module-icon child"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 21a7 7 0 0 1 14 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8.5 7.5c1.2-2 5.1-2 7 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+            <strong>Mateo</strong>
+            <p class="muted">Datos, medicamentos, médicos, regalos y meriendas.</p>
+          </div>
+          <button class="btn primary" type="button">Entrar</button>
+        </div>
+      </div>
+      <div class="grid home-widgets">
+        <div class="card home-widget home-meals-widget" onclick="showMenuView('plan')" title="Click para abrir plan de comidas">
+          <div class="card-head"><span class="card-title">Comidas</span><span class="muted">Hoy y mañana</span></div>
+          <div class="card-body"><div class="grid" id="home-meals"></div></div>
+        </div>
+        <div class="card home-widget home-finance-widget" onclick="showPage('dashboard')" title="Click para abrir finanzas">
+          <div class="card-head"><span class="card-title">Finanzas</span><span class="muted" id="home-balance"></span></div>
+          <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Descripción</th><th class="right">Monto</th></tr></thead><tbody id="home-movements"></tbody></table></div>
+        </div>
+        <div class="card home-widget home-shopping-widget" onclick="showMenuView('lugares')" title="Click para abrir lista de compras">
+          <div class="card-head"><span class="card-title">Lista de compras</span><span class="muted">Click</span></div>
+          <div class="card-body"><div class="grid shopping-grid" id="home-shopping"></div></div>
+        </div>
+      </div>
+      <div class="card home-widget home-meriendas-widget" onclick="showMateoView('meriendas')" title="Click para abrir meriendas" style="margin-top:16px;">
+        <div class="card-head"><span class="card-title">Meriendas Mateo</span><span class="muted">Click</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Detalle</th></tr></thead><tbody id="home-meriendas"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-mateo">
+      <div class="page-head">
+        <div>
+          <h2>Mateo</h2>
+          <p class="muted">Datos, salud, regalos y meriendas.</p>
+        </div>
+        <div class="actions">
+          <button class="btn" onclick="showPage('home')">Principal</button>
+        </div>
+      </div>
+      <div class="mateo-panel active" data-mateo-panel="home">
+        <div class="grid home-widgets">
+          <div class="card home-widget" onclick="showMateoView('datos')" title="Click para abrir datos">
+            <div class="card-head"><span class="card-title">Datos</span><span class="muted" id="mateo-home-data-count"></span></div>
+            <div class="card-body" id="mateo-home-data"></div>
+          </div>
+          <div class="card home-widget" onclick="showMateoView('medicamentos')" title="Click para abrir medicamentos">
+            <div class="card-head"><span class="card-title">Medicamentos</span><span class="muted" id="mateo-home-medicamentos-count"></span></div>
+            <div class="card-body" id="mateo-home-medicamentos"></div>
+          </div>
+          <div class="card home-widget" onclick="showMateoView('medicos')" title="Click para abrir agenda médicos">
+            <div class="card-head"><span class="card-title">Agenda médicos</span><span class="muted" id="mateo-home-medicos-count"></span></div>
+            <div class="card-body" id="mateo-home-medicos"></div>
+          </div>
+          <div class="card home-widget" onclick="showMateoView('regalos')" title="Click para abrir posibles regalos">
+            <div class="card-head"><span class="card-title">Posibles regalos</span><span class="muted" id="mateo-home-regalos-count"></span></div>
+            <div class="card-body" id="mateo-home-regalos"></div>
+          </div>
+          <div class="card home-widget" onclick="showMateoView('meriendas')" title="Click para abrir meriendas">
+            <div class="card-head"><span class="card-title">Meriendas</span><span class="muted" id="mateo-home-meriendas-count"></span></div>
+            <div class="card-body" id="mateo-home-meriendas"></div>
+          </div>
+        </div>
+      </div>
+      <div class="mateo-panel" data-mateo-panel="datos">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Datos</span><div class="actions"><button class="btn sm primary" onclick="openMateoDataModal()">+ Dato</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Valor</th><th></th></tr></thead><tbody id="mateo-data-body"></tbody></table></div>
+        </div>
+      </div>
+      <div class="mateo-panel" data-mateo-panel="medicamentos">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Medicamentos</span><div class="actions"><button class="btn sm primary" onclick="openMateoListModal('medicamentos')">+ Medicamento</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Detalle</th><th></th></tr></thead><tbody id="mateo-medicamentos-body"></tbody></table></div>
+        </div>
+      </div>
+      <div class="mateo-panel" data-mateo-panel="medicos">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Agenda médicos</span><div class="actions"><button class="btn sm primary" onclick="openMateoListModal('medicos')">+ Médico</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Detalle</th><th></th></tr></thead><tbody id="mateo-medicos-body"></tbody></table></div>
+        </div>
+      </div>
+      <div class="mateo-panel" data-mateo-panel="regalos">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Posibles regalos</span><div class="actions"><button class="btn sm primary" onclick="openMateoListModal('regalos')">+ Regalo</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Detalle</th><th></th></tr></thead><tbody id="mateo-regalos-body"></tbody></table></div>
+        </div>
+      </div>
+      <div class="mateo-panel" data-mateo-panel="meriendas">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Meriendas</span><div class="actions"><input id="mateo-merienda-fecha" type="date"><button class="btn sm primary" onclick="addMateoMerienda()">+ Fecha</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Detalle</th><th></th></tr></thead><tbody id="mateo-meriendas-body"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-dashboard">
       <div class="page-head">
         <div>
           <h2>Inicio</h2>
-          <p class="muted">Resumen de ingresos, gastos y categorias.</p>
+          <p class="muted">Resumen de ingresos, gastos y categorías.</p>
         </div>
         <div class="actions">
           <select id="dash-month" onchange="renderDashboard()"></select>
@@ -288,13 +569,78 @@
           <div class="card-body"><div class="chart-box"><canvas id="chart-months"></canvas></div></div>
         </div>
         <div class="card">
-          <div class="card-head"><span class="card-title">Ingresos por categoria</span></div>
+          <div class="card-head"><span class="card-title">Ingresos por categoría</span></div>
           <div class="card-body"><div class="chart-box"><canvas id="chart-income-cat"></canvas></div></div>
         </div>
       </div>
       <div class="card">
         <div class="card-head"><span class="card-title">Últimos movimientos</span></div>
-        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoría</th><th>Cuenta</th><th class="right">Monto</th></tr></thead><tbody id="recent-body"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cuenta</th><th class="right">Monto</th></tr></thead><tbody id="recent-body"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-menu">
+      <div class="page-head">
+        <div>
+          <h2>Menú</h2>
+          <p class="muted">Almuerzos, cenas y lista de compras cargados desde Excel.</p>
+        </div>
+        <div class="actions">
+          <button class="btn" onclick="showPage('home')">Principal</button>
+          <input id="menu-plan-file" class="hidden" type="file" accept=".xlsx,.xls,.csv" onchange="handlePlanFile(event)">
+          <input id="shopping-file" class="hidden" type="file" accept=".xlsx,.xls,.csv" onchange="handleShoppingFile(event)">
+        </div>
+      </div>
+      <div class="menu-panel active" data-menu-panel="home">
+        <div class="grid menu-hero" id="menu-today"></div>
+        <div class="card shopping-link" onclick="showMenuView('lugares')" title="Click para ir a lista de compras" style="margin-bottom:16px;">
+          <div class="card-head"><span class="card-title">Lista de compras</span><span class="muted">Click</span></div>
+          <div class="card-body"><div class="grid shopping-grid" id="shopping-preview"></div></div>
+        </div>
+        <div class="grid module-grid">
+          <div class="module-card" onclick="showMenuView('plan')" role="button" tabindex="0">
+            <div><strong>Plan de comidas</strong><p class="muted">Calendario diario de almuerzos y cenas.</p></div>
+            <button class="btn primary" type="button">Ver plan</button>
+          </div>
+          <div class="module-card" onclick="showMenuView('lugares')" role="button" tabindex="0">
+            <div><strong>Lista de compras</strong><p class="muted">Compras separadas por supermercado, feria u otro lugar.</p></div>
+            <button class="btn primary" type="button">Ver lista</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-panel" data-menu-panel="plan">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Plan de comidas</span><div class="actions"><span class="muted" id="menu-count"></span><button class="btn sm" onclick="downloadMenuTemplate('plan')">Template</button><button class="btn sm" onclick="document.getElementById('menu-plan-file').click()">Importar</button><button class="btn sm" onclick="exportCurrentViewExcel()">Excel</button><button class="btn sm primary" onclick="openMealModal()">+ Comida</button><button class="btn sm" onclick="openShoppingItemModal()">+ Compra</button></div></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Fecha</th><th>Día</th><th>Almuerzo</th><th>Cena</th><th></th></tr></thead><tbody id="menu-plan-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+      <div class="menu-panel" data-menu-panel="lugares">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Lista de compras</span><div class="actions"><span class="muted" id="shopping-place-count"></span><button class="btn sm" onclick="downloadMenuTemplate('compras')">Template</button><button class="btn sm" onclick="document.getElementById('shopping-file').click()">Importar</button><button class="btn sm" onclick="exportCurrentViewExcel()">Excel</button><button class="btn sm" onclick="openShoppingCategoryModal()">+ Categoría</button><button class="btn sm primary" onclick="openShoppingItemModal()">+ Compra</button></div></div>
+          <div class="card-body">
+            <div class="grid shopping-grid" id="shopping-by-place"></div>
+          </div>
+        </div>
+      </div>
+      <div class="menu-panel" data-menu-panel="categorias">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Categorías / lugares de compra</span><div class="actions"><button class="btn sm primary" onclick="openShoppingCategoryModal()">+ Categoría</button><button class="btn sm" onclick="openShoppingItemModal()">+ Compra</button></div></div>
+          <div class="card-body">
+            <div class="actions">
+              <input id="shop-category-new" placeholder="Ej: Supermercado, Feria, Carnicería">
+              <button class="btn primary" onclick="addShoppingCategory()">Agregar categoría</button>
+            </div>
+            <div class="category-list" id="shopping-categories-list" style="margin-top:12px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card shopping-link" onclick="showMenuView('lugares')" title="Click para ir a lista de compras" style="margin-top:16px;">
+        <div class="card-head"><span class="card-title">Vista rápida de compras</span><span class="muted">Click</span></div>
+        <div class="card-body">
+          <div class="grid shopping-grid" id="shopping-list"></div>
+        </div>
       </div>
     </section>
 
@@ -302,7 +648,7 @@
       <div class="page-head">
         <div>
           <h2>Gastos recurrentes</h2>
-          <p class="muted">Categorias recurrentes del mes, tengan o no movimientos cargados.</p>
+          <p class="muted">Categorías recurrentes del mes, tengan o no movimientos cargados.</p>
         </div>
         <div class="actions">
           <select id="recurring-month" onchange="renderRecurrentesPage()"></select>
@@ -313,7 +659,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Grupo</th><th>Categoria</th><th>Mes</th><th>Estado</th><th>Ultimo gasto</th><th class="right">Monto</th></tr></thead>
+            <thead><tr><th>Grupo</th><th>Categoría</th><th>Mes</th><th>Estado</th><th>Último gasto</th><th class="right">Monto</th></tr></thead>
             <tbody id="recurrentes-body"></tbody>
           </table>
         </div>
@@ -343,7 +689,7 @@
       <div class="page-head">
         <div>
           <h2>Movimientos</h2>
-          <p class="muted">Registro completo con tus categorias.</p>
+          <p class="muted">Registro completo con tus categorías.</p>
         </div>
         <div class="actions">
           <select id="filter-type" onchange="renderMovimientos()"><option value="">Todos</option><option value="ingreso">Ingresos</option><option value="gasto">Gastos</option><option value="transferencia">Transferencias</option></select>
@@ -378,17 +724,17 @@
             <label>Cuenta<select id="import-bulk-account"></select></label>
             <label>Destino<select id="import-bulk-dest"></select></label>
             <label>Tipo<select id="import-bulk-type" onchange="refreshBulkCategoryOptions()"><option value="">Sin cambiar</option><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option><option value="transferencia">Transferencia</option></select></label>
-            <label>Categoria<select id="import-bulk-category"><option value="">Sin cambiar</option></select></label>
+            <label>Categoría<select id="import-bulk-category"><option value="">Sin cambiar</option></select></label>
             <button class="btn" onclick="applyImportBulkChanges()">Aplicar a seleccionados</button>
             <button class="btn danger" onclick="ignoreSelectedImportRows()">Ignorar seleccionados</button>
           </div>
           <div class="new-category-box">
             <div class="import-tools">
-              <label>Nueva categoria<input id="import-new-category" placeholder="Ej: Gastos casa"></label>
+              <label>Nueva categoría<input id="import-new-category" placeholder="Ej: Gastos casa"></label>
               <label>Tipo<select id="import-new-type"><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option></select></label>
               <label>Grupo<input id="import-new-group" placeholder="Opcional"></label>
               <label class="check-row"><input id="import-new-recurring" type="checkbox"> Recurrente</label>
-              <button class="btn" onclick="createCategoryFromImport()">Crear categoria</button>
+              <button class="btn" onclick="createCategoryFromImport()">Crear categoría</button>
             </div>
           </div>
           <div class="import-summary" id="import-summary"></div>
@@ -400,7 +746,7 @@
             <thead>
               <tr>
                 <th class="row-check"><input id="import-select-all" type="checkbox" onchange="toggleAllImportRows(this.checked)"></th>
-                <th>Fecha</th><th>Nombre</th><th>Tipo</th><th>Categoria</th><th>Cuenta</th><th>Destino</th><th class="right">Monto</th><th>Notas</th><th></th>
+                <th>Fecha</th><th>Nombre</th><th>Tipo</th><th>Categoría</th><th>Cuenta</th><th>Destino</th><th class="right">Monto</th><th>Notas</th><th></th>
               </tr>
             </thead>
             <tbody id="import-review-body"></tbody>
@@ -465,12 +811,12 @@
     <section class="page" id="page-categorias">
       <div class="page-head">
         <div>
-          <h2>Categorias</h2>
-          <p class="muted">Crea, edita o elimina las categorias que usas para ingresos y gastos.</p>
+          <h2>Categorías</h2>
+          <p class="muted">Creá, editá o eliminá las categorías que usás para ingresos y gastos.</p>
         </div>
         <div class="actions">
           <button class="btn" onclick="exportCurrentViewExcel()">Excel</button>
-          <button class="btn primary" onclick="openCategoria()">+ Nueva categoria</button>
+          <button class="btn primary" onclick="openCategoria()">+ Nueva categoría</button>
         </div>
       </div>
       <div class="grid two-col">
@@ -500,7 +846,7 @@
             <div class="form-grid">
               <label>Project URL<input id="cloud-url" placeholder="https://xxxxx.supabase.co"></label>
               <label>Anon public key<input id="cloud-key" placeholder="eyJhbGci..."></label>
-              <label>Email para iniciar sesion<input id="cloud-email" type="email" placeholder="tu@email.com"></label>
+              <label>Email para iniciar sesión<input id="cloud-email" type="email" placeholder="tu@email.com"></label>
             </div>
             <div class="actions" style="margin-top:12px;">
               <button class="btn" onclick="saveCloudConfig()">Guardar config</button>
@@ -627,7 +973,7 @@
 
 <div class="modal-backdrop" id="modal-categoria">
   <div class="modal">
-    <div class="modal-head"><strong id="categoria-title">Nueva categoria</strong><button class="btn sm" onclick="closeModal('modal-categoria')">Cerrar</button></div>
+    <div class="modal-head"><strong id="categoria-title">Nueva categoría</strong><button class="btn sm" onclick="closeModal('modal-categoria')">Cerrar</button></div>
     <div class="modal-body">
       <div class="form-grid">
         <label>Nombre<input id="cat-nombre" placeholder="Ej: Sueldo, Supermercado"></label>
@@ -663,19 +1009,109 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="modal-shopping-item">
+  <div class="modal">
+    <div class="modal-head"><strong id="shopping-item-title">Agregar a lista de compras</strong><button class="btn sm" onclick="closeModal('modal-shopping-item')">Cerrar</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <input id="shop-modal-id" type="hidden">
+        <label>Producto<input id="shop-modal-item" placeholder="Ej: arroz, huevos, tomate"></label>
+        <label>Cantidad<input id="shop-modal-qty" placeholder="Ej: 1 kg, 12 unidades"></label>
+        <label>Lugar / categoría<select id="shop-modal-category"></select></label>
+        <label>Notas<input id="shop-modal-notes" placeholder="Opcional"></label>
+      </div>
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn" onclick="openShoppingCategoryModal()">+ Categoría</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-shopping-item')">Cancelar</button>
+      <button class="btn primary" id="shopping-item-save" onclick="saveShoppingItemFromModal()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-meal">
+  <div class="modal">
+    <div class="modal-head"><strong id="meal-title">Agregar comida</strong><button class="btn sm" onclick="closeModal('modal-meal')">Cerrar</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <input id="meal-id" type="hidden">
+        <label>Fecha<input id="meal-fecha" type="date"></label>
+        <label>Almuerzo<input id="meal-almuerzo" placeholder="Almuerzo"></label>
+        <label>Cena<input id="meal-cena" placeholder="Cena"></label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger hidden" id="meal-delete" onclick="deleteMealFromModal()">Eliminar</button>
+      <button class="btn" onclick="closeModal('modal-meal')">Cancelar</button>
+      <button class="btn primary" onclick="saveMealFromModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-shopping-category">
+  <div class="modal">
+    <div class="modal-head"><strong>Agregar categoría de compra</strong><button class="btn sm" onclick="closeModal('modal-shopping-category')">Cerrar</button></div>
+    <div class="modal-body">
+      <label>Categoría / lugar<input id="shop-modal-category-new" placeholder="Ej: Supermercado, Feria, Carnicería"></label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-shopping-category')">Cancelar</button>
+      <button class="btn primary" onclick="saveShoppingCategoryFromModal()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-mateo-data">
+  <div class="modal">
+    <div class="modal-head"><strong id="mateo-data-title">Dato de Mateo</strong><button class="btn sm" onclick="closeModal('modal-mateo-data')">Cerrar</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <input id="mateo-data-id" type="hidden">
+        <label>Categoría<input id="mateo-data-name" placeholder="Ej: Altura"></label>
+        <label>Valor<input id="mateo-data-value" placeholder="Ej: 110 cm"></label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-mateo-data')">Cancelar</button>
+      <button class="btn primary" onclick="saveMateoData()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-mateo-list">
+  <div class="modal">
+    <div class="modal-head"><strong id="mateo-list-title">Agregar</strong><button class="btn sm" onclick="closeModal('modal-mateo-list')">Cerrar</button></div>
+    <div class="modal-body">
+      <input id="mateo-list-id" type="hidden">
+      <input id="mateo-list-kind" type="hidden">
+      <div class="form-grid">
+        <label>Detalle<input id="mateo-list-text" placeholder="Detalle"></label>
+        <label id="mateo-list-date-wrap" class="hidden">Fecha agendada<input id="mateo-list-date" type="date"></label>
+        <label id="mateo-list-month-wrap" class="hidden">Mes para agendar<input id="mateo-list-month" type="month"></label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-mateo-list')">Cancelar</button>
+      <button class="btn primary" onclick="saveMateoListItem()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modal-comprobante">
   <div class="modal wide">
     <div class="modal-head"><strong>Cargar comprobante</strong><button class="btn sm" onclick="closeModal('modal-comprobante')">Cerrar</button></div>
     <div class="modal-body">
       <label class="upload-box">
         <strong>Sacar foto o subir comprobante</strong>
-        <span>En celular abre la camara. Tambien acepta imagen o PDF.</span>
+        <span>En celular abre la cámara. También acepta imagen o PDF.</span>
         <input id="receipt-file" type="file" accept="image/*,application/pdf" capture="environment" onchange="handleReceiptFile(event)">
       </label>
       <div class="status-box hidden" id="receipt-status"></div>
       <div class="form-grid hidden" id="receipt-form" style="margin-top:14px;">
-        <label>Categoria<select id="r-categoria"></select></label>
-        <label>Descripcion<input id="r-desc"></label>
+        <label>Categoría<select id="r-categoria"></select></label>
+        <label>Descripción<input id="r-desc"></label>
         <label>Monto<input id="r-monto" type="number" step="0.01"></label>
         <label>Fecha<input id="r-fecha" type="date"></label>
         <label>Cuenta<select id="r-cuenta"></select></label>
@@ -705,7 +1141,7 @@
       <div class="status-box hidden" id="bank-status"></div>
       <div class="preview-list hidden" id="bank-preview">
         <table>
-          <thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoria</th><th>Tipo</th><th class="right">Monto</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Tipo</th><th class="right">Monto</th></tr></thead>
           <tbody id="bank-preview-body"></tbody>
         </table>
       </div>
@@ -760,7 +1196,7 @@ const ALL_CATEGORIAS = [];
 const COLORS = ['#25734b', '#235b9f', '#b23636', '#916400', '#7057a6', '#0f766e', '#c05220', '#557a2a', '#9d3560', '#64748b', '#7c4a03', '#0e7490'];
 const ICONS = { efectivo: '$', banco: 'B', tarjeta: 'T', ahorro: 'A', otro: 'O' };
 
-let state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], aiRules: [] };
+let state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], aiRules: [], menuDays: [], shoppingItems: [], shoppingCategories: [], mateoData: [], mateoDataInitialized: false, mateoMedicamentos: [], mateoMedicos: [], mateoRegalos: [], mateoMeriendas: [] };
 let currentTipo = 'gasto';
 let editingCuentaId = null;
 let editingMovimientoId = null;
@@ -778,6 +1214,9 @@ let selectedMovimientoIds = new Set();
 let summaryOnlyWithBalance = false;
 let recurringSummaryIncludeEmpty = false;
 let currentSummaryDetail = null;
+let currentMenuView = 'home';
+let currentMateoView = 'home';
+let appHistory = [];
 
 function createDemoState() {
   const cuentas = [
@@ -846,7 +1285,16 @@ function createDemoState() {
       ['Ocio', 6500]
     ].forEach(([categoria, monto]) => presupuestos.push({ key: `${mes}_${categoria}`, mes, categoria, monto }));
   });
-  return { cuentas, movimientos, presupuestos, deletedMovimientos: [], deletedCuentas: [], categories, aiRules: [] };
+  const menuDays = [
+    { id: 'demo-menu-1', fecha: today(), almuerzo: 'Milanesas con ensalada', cena: 'Tarta de verduras' },
+    { id: 'demo-menu-2', fecha: new Date(Date.now() + 86400000).toISOString().slice(0, 10), almuerzo: 'Pasta con salsa', cena: 'Pollo al horno' }
+  ];
+  const shoppingItems = [
+    { id: 'demo-shop-1', categoria: 'Supermercado', item: 'Huevos', cantidad: '12', notas: '' },
+    { id: 'demo-shop-2', categoria: 'Verdulería', item: 'Lechuga y tomate', cantidad: '', notas: '' }
+  ];
+  const shoppingCategories = ['Supermercado', 'Verdulería', 'Carnicería'];
+  return { cuentas, movimientos, presupuestos, deletedMovimientos: [], deletedCuentas: [], categories, aiRules: [], menuDays, shoppingItems, shoppingCategories };
 }
 
 function unique(values) {
@@ -866,6 +1314,10 @@ function monthFmt(m) {
   const names = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   return `${names[Number(mo)-1]} ${y}`;
 }
+function mateoDoctorStatus(item) {
+  if (item?.fecha) return dateFmt(item.fecha);
+  return item?.mesAgenda ? `Para agendar · ${monthFmt(item.mesAgenda)}` : 'Para agendar';
+}
 function load() {
   try { state = { ...state, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') }; } catch {}
   if (!state.cuentas.length) {
@@ -884,6 +1336,8 @@ function save() {
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('[data-page-btn]').forEach(b => b.classList.toggle('active', b.dataset.pageBtn === id));
+  if (id !== 'menu') document.querySelectorAll('[data-menu-btn]').forEach(b => b.classList.remove('active'));
+  if (typeof updateSidebarContext === 'function') updateSidebarContext(id);
   document.getElementById('page-' + id).classList.add('active');
   if (id === 'dashboard') renderDashboard();
   if (id === 'movimientos') renderMovimientos();
@@ -1063,7 +1517,7 @@ function eliminarMovimientosSeleccionados() {
 }
 function editarMovimiento(id) {
   const mov = state.movimientos.find(m => m.id === id);
-  if (!mov) return toast('No encontre ese movimiento.');
+  if (!mov) return toast('No encontré ese movimiento.');
   editingMovimientoId = id;
   document.getElementById('mov-title').textContent = 'Editar movimiento';
   fillSelect(document.getElementById('m-cuenta'), state.cuentas, mov.cuentaId);
@@ -1218,7 +1672,7 @@ function guardarCuenta() {
   const nombre = document.getElementById('c-nombre').value.trim();
   if (!nombre) return toast('Ingresá un nombre de cuenta.');
   const color = normalizeColor(document.getElementById('c-color-text').value) || normalizeColor(document.getElementById('c-color').value);
-  if (!color) return toast('Ingresa un color HEX valido, por ejemplo #25734b.');
+  if (!color) return toast('Ingresá un color HEX válido, por ejemplo #25734b.');
   const data = {
     nombre,
     tipo: document.getElementById('c-tipo').value,
@@ -1228,7 +1682,7 @@ function guardarCuenta() {
   };
   if (editingCuentaId) {
     const cuenta = state.cuentas.find(c => c.id === editingCuentaId);
-    if (!cuenta) return toast('No encontre esa cuenta.');
+    if (!cuenta) return toast('No encontré esa cuenta.');
     Object.assign(cuenta, data);
   }
   else state.cuentas.push({ id: uid(), ...data });
@@ -1240,10 +1694,10 @@ function guardarCuenta() {
 function eliminarCuenta() {
   if (!editingCuentaId) return;
   const cuenta = state.cuentas.find(c => c.id === editingCuentaId);
-  if (!cuenta) return toast('No encontre esa cuenta.');
+  if (!cuenta) return toast('No encontré esa cuenta.');
   const asociados = state.movimientos.filter(m => m.cuentaId === editingCuentaId || m.cuentaDestId === editingCuentaId);
   const msg = asociados.length
-    ? `Eliminar "${cuenta.nombre}" tambien elimina ${asociados.length} movimiento${asociados.length === 1 ? '' : 's'} asociado${asociados.length === 1 ? '' : 's'}. Continuar?`
+    ? `Eliminar "${cuenta.nombre}" también elimina ${asociados.length} movimiento${asociados.length === 1 ? '' : 's'} asociado${asociados.length === 1 ? '' : 's'}. ¿Continuar?`
     : `Eliminar "${cuenta.nombre}"?`;
   if (!confirm(msg)) return;
   if (!state.deletedCuentas.includes(editingCuentaId)) state.deletedCuentas.push(editingCuentaId);
@@ -1432,7 +1886,7 @@ function openSummaryDetail(catName, tipo, month) {
     <div class="status-box" style="margin-top:0;">Total: <strong>${money(total)}</strong> · ${items.length} ${items.length === 1 ? 'registro' : 'registros'}</div>
     <div class="table-wrap" style="margin-top:12px;">
       <table>
-        <thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoria</th><th>Cuenta</th><th class="right">Monto</th><th></th></tr></thead>
+        <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cuenta</th><th class="right">Monto</th><th></th></tr></thead>
         <tbody>${items.map(item => {
           const cuenta = state.cuentas.find(c => c.id === item.cuentaId);
           return `<tr>
@@ -1873,7 +2327,10 @@ function normalizeFinanceState(data) {
     movimientos: Array.isArray(data?.movimientos) ? data.movimientos : [],
     presupuestos: Array.isArray(data?.presupuestos) ? data.presupuestos : [],
     deletedMovimientos: Array.isArray(data?.deletedMovimientos) ? data.deletedMovimientos : [],
-    aiRules: Array.isArray(data?.aiRules) ? data.aiRules : []
+    aiRules: Array.isArray(data?.aiRules) ? data.aiRules : [],
+    menuDays: Array.isArray(data?.menuDays) ? data.menuDays : [],
+    shoppingItems: Array.isArray(data?.shoppingItems) ? data.shoppingItems : [],
+    shoppingCategories: Array.isArray(data?.shoppingCategories) ? data.shoppingCategories : []
   };
 }
 function mergeByIdOrKey(target, source, getKey, idMap) {
@@ -2095,12 +2552,14 @@ function toast(msg) {
 function refreshAll() {
   renderSidebar();
   renderDashboard();
+  renderMenu();
+  renderMateo();
   renderMovimientos();
   renderCuentas();
   renderPresupuesto();
 }
 
-/* Categorias editables y login obligatorio */
+/* Categorías editables y login obligatorio */
 function defaultAdminUser() {
   return { id: 'admin-bruno', username: 'bruno', role: 'admin', active: true, passwordHash: DEFAULT_ADMIN_HASH, updatedAt: '2026-01-01T00:00:00.000Z' };
 }
@@ -2147,6 +2606,20 @@ function ensureStateShape(options = {}) {
   if (!Array.isArray(state.categories)) state.categories = [];
   if (!Array.isArray(state.aiRules)) state.aiRules = [];
   if (!Array.isArray(state.appUsers)) state.appUsers = [];
+  if (!Array.isArray(state.menuDays)) state.menuDays = [];
+  if (!Array.isArray(state.shoppingItems)) state.shoppingItems = [];
+  if (!Array.isArray(state.shoppingCategories)) state.shoppingCategories = [];
+  if (!Array.isArray(state.mateoData)) state.mateoData = [];
+  if (!Array.isArray(state.mateoMedicamentos)) state.mateoMedicamentos = [];
+  if (!Array.isArray(state.mateoMedicos)) state.mateoMedicos = [];
+  if (!Array.isArray(state.mateoRegalos)) state.mateoRegalos = [];
+  if (!Array.isArray(state.mateoMeriendas)) state.mateoMeriendas = [];
+  if (!state.mateoDataInitialized && !state.mateoData.length) {
+    state.mateoData = ['Altura', 'Peso', 'Talle de calzado', 'Talle de buzo', 'Talle pantalón']
+      .map(nombre => ({ id: uid(), nombre, valor: '' }));
+    state.mateoDataInitialized = true;
+  }
+  state.shoppingCategories = unique(state.shoppingCategories.concat(state.shoppingItems.map(i => i.categoria)).filter(Boolean));
   const storedUsers = options.mergeStoredUsers === false ? [] : loadStoredAppUsers();
   state.appUsers = mergeAppUsers(state.appUsers, storedUsers);
   persistAppUsers();
@@ -2312,7 +2785,7 @@ function applyRoleVisibility() {
   document.querySelectorAll('[data-admin-only]').forEach(el => el.classList.toggle('hidden', !userIsAdmin()));
   if (!userIsAdmin()) {
     const active = document.querySelector('.page.active')?.id;
-    if (active === 'page-nube' || active === 'page-usuarios') showPage('dashboard');
+    if (active === 'page-usuarios') showPage('dashboard');
   }
 }
 function restoreAppSession() {
@@ -2373,11 +2846,48 @@ function fillRecurringMonthSelect(el, selected) {
     el.appendChild(opt);
   });
 }
-function showPage(id) {
+function currentNavigationSnapshot() {
+  const page = document.querySelector('.page.active')?.id.replace('page-', '') || 'home';
+  return { page, menuView: currentMenuView, mateoView: currentMateoView };
+}
+function navigationKey(snapshot) {
+  if (!snapshot) return '';
+  if (snapshot.page === 'menu') return `menu:${snapshot.menuView || 'home'}`;
+  if (snapshot.page === 'mateo') return `mateo:${snapshot.mateoView || 'home'}`;
+  return snapshot.page;
+}
+function rememberNavigation(snapshot = currentNavigationSnapshot()) {
+  if (appHistory.length && navigationKey(appHistory[appHistory.length - 1]) === navigationKey(snapshot)) return;
+  appHistory.push({ ...snapshot });
+  if (appHistory.length > 40) appHistory.shift();
+  updateBackButton();
+}
+function updateBackButton() {
+  const btn = document.getElementById('app-back-btn');
+  if (btn) btn.disabled = !appHistory.length;
+}
+function goBackInApp() {
+  const previous = appHistory.pop();
+  if (!previous) return updateBackButton();
+  if (previous.page === 'menu') currentMenuView = previous.menuView || 'home';
+  if (previous.page === 'mateo') currentMateoView = previous.mateoView || 'home';
+  showPage(previous.page, { record: false });
+}
+function showPage(id, options = {}) {
+  if (options.record !== false) {
+    const before = currentNavigationSnapshot();
+    if (navigationKey(before) !== navigationKey({ page: id, menuView: currentMenuView, mateoView: currentMateoView })) rememberNavigation(before);
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('[data-page-btn]').forEach(b => b.classList.toggle('active', b.dataset.pageBtn === id));
+  if (id !== 'menu') document.querySelectorAll('[data-menu-btn]').forEach(b => b.classList.remove('active'));
+  if (id !== 'mateo') document.querySelectorAll('[data-mateo-btn]').forEach(b => b.classList.remove('active'));
+  updateSidebarContext(id);
   document.getElementById('page-' + id).classList.add('active');
+  if (id === 'home') renderHome();
   if (id === 'dashboard') renderDashboard();
+  if (id === 'menu') renderMenu();
+  if (id === 'mateo') renderMateo();
   if (id === 'recurrentes') renderRecurrentesPage();
   if (id === 'movimientos') renderMovimientos();
   if (id === 'importacion') renderImportReview();
@@ -2388,6 +2898,7 @@ function showPage(id) {
   if (id === 'nube') renderCloud();
   if (id === 'usuarios') renderUsers();
   if (window.matchMedia('(max-width: 900px)').matches) setSidebarCollapsed(true, false);
+  updateBackButton();
 }
 function setSidebarCollapsed(collapsed, remember = true) {
   const shell = document.getElementById('app-shell');
@@ -2431,12 +2942,12 @@ function guardarMovimiento() {
   const fecha = document.getElementById('m-fecha').value;
   const cuentaId = document.getElementById('m-cuenta').value;
   const notas = document.getElementById('m-notas').value.trim();
-  if (!categoria || !desc || !monto || !fecha || !cuentaId) return toast('Completa categoria, monto, fecha y cuenta.');
-  if (currentTipo !== 'transferencia' && !categoryNames(currentTipo).includes(categoria)) return toast('Primero crea esa categoria en la seccion Categorias.');
+  if (!categoria || !desc || !monto || !fecha || !cuentaId) return toast('Completá categoría, monto, fecha y cuenta.');
+  if (currentTipo !== 'transferencia' && !categoryNames(currentTipo).includes(categoria)) return toast('Primero creá esa categoría en la sección Categorías.');
   const mov = { id: editingMovimientoId || uid(), tipo: currentTipo, concepto: categoria, categoria, desc, monto: Math.abs(monto), fecha, cuentaId, notas };
   if (currentTipo === 'transferencia') {
     mov.cuentaDestId = document.getElementById('m-cuenta-dest').value;
-    if (!mov.cuentaDestId || mov.cuentaDestId === cuentaId) return toast('Elegi una cuenta destino diferente.');
+    if (!mov.cuentaDestId || mov.cuentaDestId === cuentaId) return toast('Elegí una cuenta destino diferente.');
   }
   if (editingMovimientoId) {
     const idx = state.movimientos.findIndex(m => m.id === editingMovimientoId);
@@ -2457,7 +2968,7 @@ function addMovimiento({ tipo, concepto, categoria, desc, monto, fecha, cuentaId
 }
 function editarMovimiento(id) {
   const mov = state.movimientos.find(m => m.id === id);
-  if (!mov) return toast('No encontre ese movimiento.');
+  if (!mov) return toast('No encontré ese movimiento.');
   editingMovimientoId = id;
   document.getElementById('mov-title').textContent = 'Editar movimiento';
   fillSelect(document.getElementById('m-cuenta'), state.cuentas, mov.cuentaId);
@@ -2473,6 +2984,27 @@ function editarMovimiento(id) {
   document.getElementById('m-cuenta-dest').value = mov.cuentaDestId || '';
   document.getElementById('m-notas').value = mov.notas || '';
   openModal('modal-mov');
+}
+function renderHome() {
+  const meals = document.getElementById('home-meals');
+  const balance = document.getElementById('home-balance');
+  const movements = document.getElementById('home-movements');
+  const shopping = document.getElementById('home-shopping');
+  const meriendas = document.getElementById('home-meriendas');
+  if (!meals || !balance || !movements || !shopping || !meriendas) return;
+  const todayISO = today();
+  const tomorrowISO = addDaysISO(todayISO, 1);
+  meals.innerHTML = renderMealCard(todayISO, 'Hoy') + renderMealCard(tomorrowISO, 'Mañana');
+  balance.textContent = money(totalBalance());
+  const latest = [...state.movimientos].sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || ''))).slice(0, 4);
+  movements.innerHTML = latest.length ? latest.map(m => {
+    const cls = m.tipo === 'ingreso' ? 'green' : m.tipo === 'gasto' ? 'red' : 'blue';
+    const sign = m.tipo === 'ingreso' ? '+' : m.tipo === 'gasto' ? '-' : '';
+    return `<tr><td>${dateFmt(m.fecha)}</td><td>${esc(m.desc || m.categoria || '')}</td><td class="right ${cls}"><strong>${sign} ${money(m.monto)}</strong></td></tr>`;
+  }).join('') : '<tr><td colspan="3"><div class="empty">Sin movimientos todavía.</div></td></tr>';
+  shopping.innerHTML = renderShoppingCards(2);
+  const nextMeriendas = state.mateoMeriendas.slice().sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || ''))).slice(0, 6);
+  meriendas.innerHTML = nextMeriendas.length ? nextMeriendas.map(item => `<tr><td>${dateFmt(item.fecha)}</td><td>${esc(item.texto || 'Merienda Mateo')}</td></tr>`).join('') : '<tr><td colspan="2"><div class="empty">Sin meriendas agendadas.</div></td></tr>';
 }
 function renderDashboard() {
   refreshSelectors();
@@ -2510,13 +3042,13 @@ function renderRecurrentes(movs, month) {
   const el = document.getElementById('recurring-content');
   const recurrentes = getCategories('gasto').filter(c => c.recurrente);
   if (!recurrentes.length) {
-    el.innerHTML = '<div class="empty">Marca categorias de gasto como recurrentes para verlas aca.</div>';
+    el.innerHTML = '<div class="empty">Marcá categorías de gasto como recurrentes para verlas acá.</div>';
     return;
   }
   const totalMes = recurrentes.reduce((sum, cat) => {
     return sum + movs.filter(m => m.tipo === 'gasto' && m.categoria === cat.nombre).reduce((s, m) => s + m.monto, 0);
   }, 0);
-  el.innerHTML = `<div class="budget-row"><strong>${recurrentes.length} categorias recurrentes</strong><span class="muted">${month ? monthFmt(month) : 'Todos los meses'} · ${money(totalMes)}</span></div>
+  el.innerHTML = `<div class="budget-row"><strong>${recurrentes.length} categorías recurrentes</strong><span class="muted">${month ? monthFmt(month) : 'Todos los meses'} · ${money(totalMes)}</span></div>
   <div class="recurring-grid">${recurrentes.slice(0, 4).map(cat => {
     const rows = movs.filter(m => m.tipo === 'gasto' && m.categoria === cat.nombre);
     const total = rows.reduce((sum, m) => sum + m.monto, 0);
@@ -2571,9 +3103,9 @@ function renderRecurringSummary() {
   const body = document.getElementById('recurring-summary-body');
   if (!head || !body) return;
   const monthHeaders = SUMMARY_MONTHS.map(m => `<th class="month-cell">${m}</th>`).join('');
-  head.innerHTML = `<tr><th class="concept-cell">Categoria</th>${monthHeaders}<th class="total-cell">Total</th></tr>`;
+  head.innerHTML = `<tr><th class="concept-cell">Categoría</th>${monthHeaders}<th class="total-cell">Total</th></tr>`;
   if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="14"><div class="empty">${recurringSummaryIncludeEmpty ? 'No hay gastos recurrentes para mostrar.' : 'No hay recurrentes con monto en ' + year + '. Usa "Ver sin monto" para ver los pendientes.'}</div></td></tr>`;
+    body.innerHTML = `<tr><td colspan="14"><div class="empty">${recurringSummaryIncludeEmpty ? 'No hay gastos recurrentes para mostrar.' : 'No hay recurrentes con monto en ' + year + '. Usá "Ver sin monto" para ver los pendientes.'}</div></td></tr>`;
     return;
   }
   const groupTotals = Array.from({ length: 12 }, (_, i) => rows.reduce((sum, row) => sum + row.values[i], 0));
@@ -2602,7 +3134,7 @@ function renderRecurrentesPage() {
   const items = recurrentRowsForMonth(month);
   const body = document.getElementById('recurrentes-body');
   if (!items.length) {
-    body.innerHTML = '<tr><td colspan="6"><div class="empty">Todavia no marcaste categorias de gasto como recurrentes.</div></td></tr>';
+    body.innerHTML = '<tr><td colspan="6"><div class="empty">Todavía no marcaste categorías de gasto como recurrentes.</div></td></tr>';
     renderRecurringSummary();
     return;
   }
@@ -2625,7 +3157,7 @@ function renderRecurrentesPage() {
 }
 function renderRows(tbody, movs, withActions = true) {
   if (!movs.length) {
-    tbody.innerHTML = `<tr><td colspan="${withActions ? 9 : 5}"><div class="empty">Sin movimientos todavia.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${withActions ? 9 : 5}"><div class="empty">Sin movimientos todavía.</div></td></tr>`;
     if (withActions) updateBulkDeleteUI();
     return;
   }
@@ -2652,7 +3184,7 @@ function renderRows(tbody, movs, withActions = true) {
 function openCategoria(id) {
   const cat = id ? state.categories.find(c => c.id === id) : null;
   editingCategoriaId = id || null;
-  document.getElementById('categoria-title').textContent = cat ? 'Editar categoria' : 'Nueva categoria';
+  document.getElementById('categoria-title').textContent = cat ? 'Editar categoría' : 'Nueva categoría';
   document.getElementById('cat-nombre').value = cat ? cat.nombre : '';
   document.getElementById('cat-tipo').value = cat ? cat.tipo : 'gasto';
   document.getElementById('cat-grupo').value = cat ? (cat.grupo || '') : '';
@@ -2665,9 +3197,9 @@ function guardarCategoria() {
   const tipo = document.getElementById('cat-tipo').value;
   const grupo = document.getElementById('cat-grupo').value.trim();
   const recurrente = tipo === 'gasto' && document.getElementById('cat-recurrente').checked;
-  if (!nombre) return toast('Ingresa un nombre de categoria.');
+  if (!nombre) return toast('Ingresá un nombre de categoría.');
   const duplicate = state.categories.find(c => c.id !== editingCategoriaId && c.tipo === tipo && normalizeKey(c.nombre) === normalizeKey(nombre));
-  if (duplicate) return toast('Esa categoria ya existe.');
+  if (duplicate) return toast('Esa categoría ya existe.');
   if (editingCategoriaId) {
     const cat = state.categories.find(c => c.id === editingCategoriaId);
     const oldName = cat.nombre;
@@ -2679,18 +3211,18 @@ function guardarCategoria() {
   save();
   closeModal('modal-categoria');
   refreshAll();
-  toast('Categoria guardada');
+  toast('Categoría guardada');
 }
 function eliminarCategoria() {
   const cat = state.categories.find(c => c.id === editingCategoriaId);
   if (!cat) return;
   const used = state.movimientos.some(m => m.categoria === cat.nombre) || state.presupuestos.some(p => p.categoria === cat.nombre);
-  if (used && !confirm('Esta categoria tiene movimientos o presupuestos. Si la eliminas, esos registros quedan con la categoria guardada pero ya no aparecera como opcion. Continuar?')) return;
+  if (used && !confirm('Esta categoría tiene movimientos o presupuestos. Si la eliminás, esos registros quedan con la categoría guardada pero ya no aparecerá como opción. ¿Continuar?')) return;
   state.categories = state.categories.filter(c => c.id !== editingCategoriaId);
   save();
   closeModal('modal-categoria');
   refreshAll();
-  toast('Categoria eliminada');
+  toast('Categoría eliminada');
 }
 function renderCategorias() {
   ensureStateShape();
@@ -2698,7 +3230,7 @@ function renderCategorias() {
     const el = document.getElementById('cat-' + tipo);
     const cats = getCategories(tipo);
     if (!cats.length) {
-      el.innerHTML = '<div class="empty">Sin categorias todavia.</div>';
+      el.innerHTML = '<div class="empty">Sin categorías todavía.</div>';
       return;
     }
     el.innerHTML = cats.map(cat => `<div class="category-row"><strong>${cat.nombre}${cat.grupo ? ` <span class="badge gray">${cat.grupo}</span>` : ''}${cat.recurrente ? ' <span class="badge red">recurrente</span>' : ''}</strong><button class="btn sm" onclick="openCategoria('${cat.id}')">Editar</button><button class="btn sm danger" onclick="openCategoria('${cat.id}');eliminarCategoria()">Eliminar</button></div>`).join('');
@@ -2747,10 +3279,10 @@ async function saveAppUser() {
   const role = document.getElementById('u-role').value;
   const password = document.getElementById('u-password').value;
   const active = document.getElementById('u-active').checked;
-  if (!username) return toast('Ingresa un usuario.');
+  if (!username) return toast('Ingresá un usuario.');
   const duplicate = state.appUsers.find(u => u.id !== editingUserId && normalizeUsername(u.username) === username);
   if (duplicate) return toast('Ese usuario ya existe.');
-  if (!editingUserId && !password) return toast('Ingresa una contraseña.');
+  if (!editingUserId && !password) return toast('Ingresá una contraseña.');
   if (requiresServerAppUsers() && !currentAppToken) return toast('Cerrá sesión y volvé a entrar como administrador.');
   if (currentAppToken) {
     try {
@@ -2800,6 +3332,711 @@ function deleteAppUser() {
   closeModal('modal-user');
   renderUsers();
   toast('Usuario eliminado');
+}
+function addDaysISO(date, days) {
+  const d = new Date(date + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function dayName(date) {
+  return new Date(date + 'T00:00:00').toLocaleDateString('es-UY', { weekday: 'long' });
+}
+function getMenuDay(date) {
+  return state.menuDays.find(d => d.fecha === date) || { fecha: date, almuerzo: '', cena: '' };
+}
+function cleanupPurchasedShoppingItems() {
+  const limit = Date.now() - 48 * 60 * 60 * 1000;
+  const before = state.shoppingItems.length;
+  state.shoppingItems = state.shoppingItems.filter(item => !item.compradoAt || new Date(item.compradoAt).getTime() > limit);
+  if (state.shoppingItems.length !== before) save();
+}
+function mealText(value) {
+  return String(value || '').trim() || 'Sin cargar';
+}
+function renderMealCard(date, label) {
+  const day = getMenuDay(date);
+  return `<div class="meal-card ${date === today() ? 'today' : ''}">
+    <div class="meal-date"><strong>${label}</strong><span>${dateFmt(date)} · ${dayName(date)}</span></div>
+    <div class="meal-slot"><span>Almuerzo</span><strong>${esc(mealText(day.almuerzo))}</strong></div>
+    <div class="meal-slot"><span>Cena</span><strong>${esc(mealText(day.cena))}</strong></div>
+  </div>`;
+}
+function groupedShoppingItems() {
+  return state.shoppingItems.reduce((groups, item) => {
+    const key = String(item.categoria || 'Sin categoría').trim() || 'Sin categoría';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(item);
+    return groups;
+  }, {});
+}
+function renderShoppingCards(limitGroups = Infinity) {
+  cleanupPurchasedShoppingItems();
+  const groups = groupedShoppingItems();
+  const entries = Object.entries(groups).slice(0, limitGroups);
+  if (!entries.length) return '<div class="empty">Sin lista de compras cargada.</div>';
+  return entries.map(([categoria, items]) => `<div class="shopping-card">
+    <strong>${esc(categoria)}</strong>
+    <ul>${items.map(item => `<li class="shopping-line ${item.compradoAt ? 'done' : ''}" tabindex="0" title="Presioná C, Enter o Espacio para marcar comprado" onkeydown="handleShoppingItemKey(event,'${item.id}')">
+      <span class="shopping-text">${esc(item.item)}${item.cantidad ? ` · ${esc(item.cantidad)}` : ''}${item.notas ? ` <span class="muted">(${esc(item.notas)})</span>` : ''}</span>
+      <span class="shopping-actions">
+        <button class="btn sm" onclick="toggleShoppingBought('${item.id}');event.stopPropagation();">${item.compradoAt ? 'Deshacer' : 'Comprado'}</button>
+        <button class="btn sm" onclick="openShoppingItemModal('${item.id}');event.stopPropagation();">Editar</button>
+        <button class="btn sm danger" onclick="deleteShoppingItem('${item.id}');event.stopPropagation();">Eliminar</button>
+      </span>
+    </li>`).join('')}</ul>
+  </div>`).join('');
+}
+function showMenuView(view = 'home') {
+  const before = currentNavigationSnapshot();
+  currentMenuView = view;
+  if (navigationKey(before) !== navigationKey({ page: 'menu', menuView: view, mateoView: currentMateoView })) rememberNavigation(before);
+  showPage('menu', { record: false });
+}
+function fillShoppingCategorySelect() {
+  const el = document.getElementById('shop-category');
+  if (!el) return;
+  fillSelect(el, state.shoppingCategories.length ? state.shoppingCategories : ['Sin categoría']);
+}
+function renderShoppingTable() {
+  cleanupPurchasedShoppingItems();
+  const body = document.getElementById('shopping-list-body');
+  if (!body) return;
+  body.innerHTML = state.shoppingItems.length ? state.shoppingItems.map(item => `<tr>
+    <td><span class="badge gray">${esc(item.categoria || 'Sin categoría')}</span></td>
+    <td class="${item.compradoAt ? 'shopping-line done' : ''}"><strong class="shopping-text">${esc(item.item)}</strong></td>
+    <td>${esc(item.cantidad || '')}</td>
+    <td>${esc(item.notas || '')}</td>
+    <td class="right"><button class="btn sm" onclick="toggleShoppingBought('${item.id}')">${item.compradoAt ? 'Deshacer' : 'Comprado'}</button><button class="btn sm" onclick="openShoppingItemModal('${item.id}')">Editar</button><button class="btn sm danger" onclick="deleteShoppingItem('${item.id}')">Eliminar</button></td>
+  </tr>`).join('') : '<tr><td colspan="5" class="empty">Sin compras cargadas.</td></tr>';
+}
+function renderShoppingCategories() {
+  const el = document.getElementById('shopping-categories-list');
+  if (!el) return;
+  el.innerHTML = state.shoppingCategories.length ? state.shoppingCategories.map(cat => `<div class="category-row">
+    <strong>${esc(cat)}</strong><span></span><button class="btn sm danger" onclick="deleteShoppingCategory('${encodeURIComponent(cat)}')">Eliminar</button>
+  </div>`).join('') : '<div class="empty">Sin categorías de compra.</div>';
+}
+function sidebarSectionForPage(id) {
+  if (id === 'home') return 'home';
+  if (id === 'menu') return 'menu';
+  if (id === 'mateo') return 'mateo';
+  if (['nube', 'usuarios'].includes(id)) return 'config';
+  return 'finance';
+}
+function updateSidebarContext(id) {
+  const section = sidebarSectionForPage(id);
+  document.querySelectorAll('[data-nav-scope]').forEach(el => {
+    const scopes = String(el.dataset.navScope || '').split(/\s+/);
+    el.classList.toggle('hidden', !(scopes.includes('global') || scopes.includes(section)));
+  });
+}
+function syncShoppingCategoryInputs(selected = '') {
+  fillShoppingCategorySelect();
+  const modalSelect = document.getElementById('shop-modal-category');
+  if (modalSelect) fillSelect(modalSelect, state.shoppingCategories.length ? state.shoppingCategories : ['Sin categoría'], selected);
+}
+function openShoppingItemModal(id = '') {
+  ensureStateShape();
+  const item = id ? state.shoppingItems.find(row => row.id === id) : null;
+  syncShoppingCategoryInputs(item?.categoria || '');
+  document.getElementById('shop-modal-id').value = item?.id || '';
+  document.getElementById('shop-modal-item').value = item?.item || '';
+  document.getElementById('shop-modal-qty').value = item?.cantidad || '';
+  document.getElementById('shop-modal-notes').value = item?.notas || '';
+  document.getElementById('shopping-item-title').textContent = item ? 'Editar compra' : 'Agregar a lista de compras';
+  document.getElementById('shopping-item-save').textContent = item ? 'Guardar' : 'Agregar';
+  openModal('modal-shopping-item');
+}
+function openShoppingCategoryModal() {
+  const input = document.getElementById('shop-modal-category-new');
+  if (input) input.value = '';
+  openModal('modal-shopping-category');
+}
+function createShoppingItem({ item, cantidad = '', categoria = 'Sin categoría', notas = '' }) {
+  item = String(item || '').trim();
+  categoria = String(categoria || '').trim() || 'Sin categoría';
+  if (!item) return false;
+  state.shoppingCategories = unique(state.shoppingCategories.concat(categoria));
+  state.shoppingItems.push({ id: uid(), categoria, item, cantidad: String(cantidad || '').trim(), notas: String(notas || '').trim(), compradoAt: '' });
+  save();
+  renderMenu();
+  return true;
+}
+function saveShoppingItemFromModal() {
+  const id = document.getElementById('shop-modal-id')?.value || '';
+  const item = String(document.getElementById('shop-modal-item')?.value || '').trim();
+  const cantidad = String(document.getElementById('shop-modal-qty')?.value || '').trim();
+  const categoria = String(document.getElementById('shop-modal-category')?.value || '').trim() || 'Sin categoría';
+  const notas = String(document.getElementById('shop-modal-notes')?.value || '').trim();
+  if (!item) return toast('Ingresá un producto.');
+  if (id) {
+    const row = state.shoppingItems.find(i => i.id === id);
+    if (row) Object.assign(row, { item, cantidad, categoria, notas });
+    state.shoppingCategories = unique(state.shoppingCategories.concat(categoria));
+    save();
+    renderMenu();
+  } else {
+    createShoppingItem({ item, cantidad, categoria, notas });
+  }
+  closeModal('modal-shopping-item');
+  toast(id ? 'Compra actualizada' : 'Compra agregada');
+}
+function createShoppingCategory(value) {
+  value = String(value || '').trim();
+  if (!value) return false;
+  if (state.shoppingCategories.some(c => normalizeKey(c) === normalizeKey(value))) return 'duplicate';
+  state.shoppingCategories.push(value);
+  state.shoppingCategories = unique(state.shoppingCategories);
+  save();
+  renderMenu();
+  syncShoppingCategoryInputs(value);
+  return true;
+}
+function saveShoppingCategoryFromModal() {
+  const result = createShoppingCategory(document.getElementById('shop-modal-category-new')?.value);
+  if (!result) return toast('Ingresá una categoría.');
+  if (result === 'duplicate') return toast('Esa categoría ya existe.');
+  closeModal('modal-shopping-category');
+  toast('Categoría agregada');
+}
+function addShoppingCategory() {
+  const input = document.getElementById('shop-category-new');
+  const value = String(input?.value || '').trim();
+  const result = createShoppingCategory(value);
+  if (!result) return toast('Ingresá una categoría.');
+  if (result === 'duplicate') return toast('Esa categoría ya existe.');
+  if (input) input.value = '';
+  toast('Categoría agregada');
+}
+function deleteShoppingCategory(category) {
+  category = decodeURIComponent(category);
+  if (state.shoppingItems.some(i => normalizeKey(i.categoria) === normalizeKey(category))) return toast('Primero eliminá o cambiá las compras de esa categoría.');
+  state.shoppingCategories = state.shoppingCategories.filter(c => normalizeKey(c) !== normalizeKey(category));
+  save();
+  renderMenu();
+  toast('Categoría eliminada');
+}
+function addShoppingItem() {
+  const item = String(document.getElementById('shop-item')?.value || '').trim();
+  const cantidad = String(document.getElementById('shop-qty')?.value || '').trim();
+  const categoria = String(document.getElementById('shop-category')?.value || '').trim() || 'Sin categoría';
+  const notas = String(document.getElementById('shop-notes')?.value || '').trim();
+  if (!createShoppingItem({ item, cantidad, categoria, notas })) return toast('Ingresá un producto.');
+  ['shop-item', 'shop-qty', 'shop-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  toast('Compra agregada');
+}
+function deleteShoppingItem(id) {
+  state.shoppingItems = state.shoppingItems.filter(item => item.id !== id);
+  save();
+  renderMenu();
+  toast('Compra eliminada');
+}
+function toggleShoppingBought(id) {
+  const item = state.shoppingItems.find(row => row.id === id);
+  if (!item) return;
+  item.compradoAt = item.compradoAt ? '' : new Date().toISOString();
+  save();
+  renderMenu();
+  toast(item.compradoAt ? 'Compra marcada como comprada por 48 horas' : 'Compra restaurada');
+}
+function handleShoppingItemKey(event, id) {
+  const key = String(event.key || '').toLowerCase();
+  if (key === 'c' || key === 'enter' || key === ' ') {
+    event.preventDefault();
+    toggleShoppingBought(id);
+  }
+}
+function renderMenu() {
+  ensureStateShape();
+  document.querySelectorAll('[data-menu-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.menuPanel === currentMenuView));
+  document.querySelectorAll('[data-menu-btn]').forEach(btn => btn.classList.toggle('active', btn.dataset.menuBtn === currentMenuView || (currentMenuView === 'categorias' && btn.dataset.menuBtn === 'categorias-compras')));
+  const todayISO = today();
+  const tomorrowISO = addDaysISO(todayISO, 1);
+  const todayEl = document.getElementById('menu-today');
+  if (!todayEl) return;
+  todayEl.innerHTML = renderMealCard(todayISO, 'Hoy') + renderMealCard(tomorrowISO, 'Mañana');
+  const rows = state.menuDays.slice().sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+  document.getElementById('menu-count').textContent = `${rows.length} días`;
+  document.getElementById('menu-plan-body').innerHTML = rows.length ? rows.map(day => `<tr>
+    <td>${dateFmt(day.fecha)}</td><td>${esc(dayName(day.fecha))}</td><td>${esc(mealText(day.almuerzo))}</td><td>${esc(mealText(day.cena))}</td>
+    <td class="right"><button class="btn sm" onclick="openMealModal('${day.fecha}')">Editar</button><button class="btn sm danger" onclick="deleteMeal('${day.fecha}')">Eliminar</button></td>
+  </tr>`).join('') : '<tr><td colspan="5" class="empty">Cargá un Excel para ver el menú.</td></tr>';
+  const shoppingPreview = document.getElementById('shopping-preview');
+  const shoppingList = document.getElementById('shopping-list');
+  const shoppingByPlace = document.getElementById('shopping-by-place');
+  const shoppingCount = document.getElementById('shopping-count');
+  const shoppingPlaceCount = document.getElementById('shopping-place-count');
+  if (shoppingPreview) shoppingPreview.innerHTML = renderShoppingCards(3);
+  if (shoppingList) shoppingList.innerHTML = renderShoppingCards();
+  if (shoppingByPlace) shoppingByPlace.innerHTML = renderShoppingCards();
+  if (shoppingCount) shoppingCount.textContent = `${state.shoppingItems.length} items`;
+  if (shoppingPlaceCount) shoppingPlaceCount.textContent = `${state.shoppingCategories.length} lugares`;
+  fillShoppingCategorySelect();
+  renderShoppingTable();
+  renderShoppingCategories();
+}
+function focusShoppingList() {
+  showMenuView('lugares');
+}
+function openMealModal(fecha = '') {
+  const day = fecha ? state.menuDays.find(row => row.fecha === fecha) : null;
+  document.getElementById('meal-id').value = day?.fecha || '';
+  document.getElementById('meal-fecha').value = day?.fecha || today();
+  document.getElementById('meal-almuerzo').value = day?.almuerzo || '';
+  document.getElementById('meal-cena').value = day?.cena || '';
+  document.getElementById('meal-title').textContent = day ? 'Editar comida' : 'Agregar comida';
+  document.getElementById('meal-delete').classList.toggle('hidden', !day);
+  openModal('modal-meal');
+}
+function saveMealFromModal() {
+  const oldFecha = document.getElementById('meal-id').value;
+  const fecha = document.getElementById('meal-fecha').value;
+  const almuerzo = document.getElementById('meal-almuerzo').value.trim();
+  const cena = document.getElementById('meal-cena').value.trim();
+  if (!fecha) return toast('Elegí una fecha.');
+  if (!almuerzo && !cena) return toast('Agregá almuerzo o cena.');
+  state.menuDays = state.menuDays.filter(day => day.fecha !== oldFecha && day.fecha !== fecha);
+  state.menuDays.push({ id: `menu-${fecha}`, fecha, almuerzo, cena });
+  state.menuDays.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  save();
+  closeModal('modal-meal');
+  renderMenu();
+  toast(oldFecha ? 'Comida actualizada' : 'Comida agregada');
+}
+function deleteMeal(fecha) {
+  state.menuDays = state.menuDays.filter(day => day.fecha !== fecha);
+  save();
+  renderMenu();
+  toast('Comida eliminada');
+}
+function deleteMealFromModal() {
+  const fecha = document.getElementById('meal-id').value;
+  if (!fecha) return;
+  deleteMeal(fecha);
+  closeModal('modal-meal');
+}
+function showMateoView(view = 'home') {
+  const before = currentNavigationSnapshot();
+  currentMateoView = view;
+  if (navigationKey(before) !== navigationKey({ page: 'mateo', menuView: currentMenuView, mateoView: view })) rememberNavigation(before);
+  showPage('mateo', { record: false });
+}
+function mateoListKey(kind) {
+  return { medicamentos: 'mateoMedicamentos', medicos: 'mateoMedicos', regalos: 'mateoRegalos' }[kind] || 'mateoMedicamentos';
+}
+function renderMateo() {
+  ensureStateShape();
+  document.querySelectorAll('[data-mateo-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.mateoPanel === currentMateoView));
+  document.querySelectorAll('[data-mateo-btn]').forEach(btn => btn.classList.toggle('active', btn.dataset.mateoBtn === currentMateoView));
+  const dataBody = document.getElementById('mateo-data-body');
+  if (dataBody) {
+    dataBody.innerHTML = state.mateoData.length ? state.mateoData.map(item => `<tr>
+      <td><div class="compact-row"><strong>${esc(item.nombre)}</strong></div></td><td><div class="compact-row"><span>${esc(item.valor || '')}</span></div></td>
+      <td class="right"><button class="btn sm" onclick="openMateoDataModal('${item.id}')">Editar</button><button class="btn sm danger" onclick="deleteMateoData('${item.id}')">Eliminar</button></td>
+    </tr>`).join('') : '<tr><td colspan="3"><div class="empty">Sin datos cargados.</div></td></tr>';
+  }
+  renderMateoList('medicamentos');
+  renderMateoList('medicos');
+  renderMateoList('regalos');
+  renderMateoMeriendas();
+  renderMateoHome();
+}
+function renderMateoHome() {
+  const dataEl = document.getElementById('mateo-home-data');
+  if (!dataEl) return;
+  const listPreview = (items, empty = 'Sin datos cargados.') => items.length
+    ? `<div class="compact-list">${items.slice(0, 5).map(item => `<div class="compact-row"><span>${esc(item.texto || item.nombre || '')}</span>${item.valor ? `<strong>${esc(item.valor)}</strong>` : ''}</div>`).join('')}</div>`
+    : `<div class="empty">${empty}</div>`;
+  dataEl.innerHTML = listPreview(state.mateoData);
+  document.getElementById('mateo-home-data-count').textContent = `${state.mateoData.length} datos`;
+  document.getElementById('mateo-home-medicamentos').innerHTML = listPreview(state.mateoMedicamentos);
+  document.getElementById('mateo-home-medicamentos-count').textContent = `${state.mateoMedicamentos.length} items`;
+  document.getElementById('mateo-home-medicos').innerHTML = state.mateoMedicos.length
+    ? `<div class="compact-list">${state.mateoMedicos.slice(0, 5).map(item => `<div class="compact-row ${item.fecha ? '' : 'pending'}"><span>${esc(item.texto || '')}</span><strong>${item.fecha ? dateFmt(item.fecha) : 'Para agendar · ' + monthFmt(currentMonth())}</strong></div>`).join('')}</div>`
+    : '<div class="empty">Sin datos cargados.</div>';
+  document.getElementById('mateo-home-medicos-count').textContent = `${state.mateoMedicos.length} items`;
+  document.getElementById('mateo-home-regalos').innerHTML = listPreview(state.mateoRegalos);
+  document.getElementById('mateo-home-regalos-count').textContent = `${state.mateoRegalos.length} items`;
+  const meriendas = state.mateoMeriendas.slice().sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || '')));
+  document.getElementById('mateo-home-meriendas').innerHTML = meriendas.length
+    ? `<div class="compact-list">${meriendas.slice(0, 5).map(item => `<div class="compact-row"><span>${dateFmt(item.fecha)}</span><strong>${esc(item.texto || 'Merienda Mateo')}</strong></div>`).join('')}</div>`
+    : '<div class="empty">Sin meriendas agendadas.</div>';
+  document.getElementById('mateo-home-meriendas-count').textContent = `${meriendas.length} fechas`;
+}
+function renderMateoList(kind) {
+  const key = mateoListKey(kind);
+  const body = document.getElementById(`mateo-${kind}-body`);
+  if (!body) return;
+  const rows = state[key] || [];
+  body.innerHTML = rows.length ? rows.map(item => `<tr>
+    <td><div class="compact-row ${kind === 'medicos' && !item.fecha ? 'pending' : ''}"><span>${esc(item.texto || '')}</span>${kind === 'medicos' ? `<strong>${item.fecha ? dateFmt(item.fecha) : 'Para agendar · ' + monthFmt(currentMonth())}</strong>` : ''}</div></td>
+    <td class="right"><button class="btn sm" onclick="openMateoListModal('${kind}','${item.id}')">Editar</button><button class="btn sm danger" onclick="deleteMateoListItem('${kind}','${item.id}')">Eliminar</button></td>
+  </tr>`).join('') : '<tr><td colspan="2"><div class="empty">Sin datos cargados.</div></td></tr>';
+}
+function openMateoDataModal(id = '') {
+  const item = id ? state.mateoData.find(row => row.id === id) : null;
+  document.getElementById('mateo-data-id').value = item?.id || '';
+  document.getElementById('mateo-data-name').value = item?.nombre || '';
+  document.getElementById('mateo-data-value').value = item?.valor || '';
+  document.getElementById('mateo-data-title').textContent = item ? 'Editar dato' : 'Agregar dato';
+  openModal('modal-mateo-data');
+}
+function saveMateoData() {
+  const id = document.getElementById('mateo-data-id').value;
+  const nombre = document.getElementById('mateo-data-name').value.trim();
+  const valor = document.getElementById('mateo-data-value').value.trim();
+  if (!nombre) return toast('Ingresá una categoría.');
+  if (id) {
+    const item = state.mateoData.find(row => row.id === id);
+    if (item) Object.assign(item, { nombre, valor });
+  } else state.mateoData.push({ id: uid(), nombre, valor });
+  save();
+  closeModal('modal-mateo-data');
+  renderMateo();
+  toast('Dato guardado');
+}
+function deleteMateoData(id) {
+  state.mateoData = state.mateoData.filter(item => item.id !== id);
+  save();
+  renderMateo();
+  toast('Dato eliminado');
+}
+function openMateoListModal(kind, id = '') {
+  const key = mateoListKey(kind);
+  const item = id ? state[key].find(row => row.id === id) : null;
+  const titles = { medicamentos: 'Medicamento', medicos: 'Médico para agendar', regalos: 'Posible regalo' };
+  document.getElementById('mateo-list-kind').value = kind;
+  document.getElementById('mateo-list-id').value = item?.id || '';
+  document.getElementById('mateo-list-text').value = item?.texto || '';
+  document.getElementById('mateo-list-date').value = item?.fecha || '';
+  document.getElementById('mateo-list-date-wrap').classList.toggle('hidden', kind !== 'medicos');
+  document.getElementById('mateo-list-title').textContent = item ? `Editar ${titles[kind]}` : `Agregar ${titles[kind]}`;
+  openModal('modal-mateo-list');
+}
+function saveMateoListItem() {
+  const kind = document.getElementById('mateo-list-kind').value;
+  const id = document.getElementById('mateo-list-id').value;
+  const texto = document.getElementById('mateo-list-text').value.trim();
+  const fecha = document.getElementById('mateo-list-date').value;
+  const key = mateoListKey(kind);
+  if (!texto) return toast('Ingresá un detalle.');
+  if (id) {
+    const item = state[key].find(row => row.id === id);
+    if (item) Object.assign(item, { texto, ...(kind === 'medicos' ? { fecha } : {}) });
+  } else state[key].push({ id: uid(), texto, ...(kind === 'medicos' ? { fecha } : {}) });
+  save();
+  closeModal('modal-mateo-list');
+  renderMateo();
+  toast('Guardado');
+}
+function deleteMateoListItem(kind, id) {
+  const key = mateoListKey(kind);
+  state[key] = state[key].filter(item => item.id !== id);
+  save();
+  renderMateo();
+  toast('Eliminado');
+}
+function renderMateo() {
+  document.querySelectorAll('[data-mateo-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.mateoPanel === currentMateoView));
+  document.querySelectorAll('[data-mateo-btn]').forEach(btn => btn.classList.toggle('active', btn.dataset.mateoBtn === currentMateoView));
+  const dataBody = document.getElementById('mateo-data-body');
+  if (dataBody) {
+    dataBody.innerHTML = state.mateoData.length ? state.mateoData.map(item => `<tr>
+      <td>${esc(item.nombre)}</td><td>${esc(item.valor || '')}</td>
+      <td class="right"><button class="btn sm" onclick="openMateoDataModal('${item.id}')">Editar</button><button class="btn sm danger" onclick="deleteMateoData('${item.id}')">Eliminar</button></td>
+    </tr>`).join('') : '<tr><td colspan="3"><div class="empty">Sin datos cargados.</div></td></tr>';
+  }
+  renderMateoList('medicamentos');
+  renderMateoList('medicos');
+  renderMateoList('regalos');
+  renderMateoMeriendas();
+  const dataEl = document.getElementById('mateo-home-data');
+  if (!dataEl) return;
+  const listPreview = (items, empty = 'Sin datos cargados.') => items.length
+    ? `<div class="compact-list">${items.slice(0, 5).map(item => `<div class="compact-row"><span>${esc(item.texto || item.nombre || '')}</span>${item.valor ? `<strong>${esc(item.valor)}</strong>` : ''}</div>`).join('')}</div>`
+    : `<div class="empty">${empty}</div>`;
+  dataEl.innerHTML = listPreview(state.mateoData);
+  document.getElementById('mateo-home-data-count').textContent = `${state.mateoData.length} datos`;
+  document.getElementById('mateo-home-medicamentos').innerHTML = listPreview(state.mateoMedicamentos);
+  document.getElementById('mateo-home-medicamentos-count').textContent = `${state.mateoMedicamentos.length} items`;
+  document.getElementById('mateo-home-medicos').innerHTML = state.mateoMedicos.length
+    ? `<div class="compact-list">${state.mateoMedicos.slice(0, 5).map(item => `<div class="compact-row ${item.fecha ? '' : 'pending'}"><span>${esc(item.texto || '')}</span><strong>${esc(mateoDoctorStatus(item))}</strong></div>`).join('')}</div>`
+    : '<div class="empty">Sin datos cargados.</div>';
+  document.getElementById('mateo-home-medicos-count').textContent = `${state.mateoMedicos.length} items`;
+  document.getElementById('mateo-home-regalos').innerHTML = listPreview(state.mateoRegalos);
+  document.getElementById('mateo-home-regalos-count').textContent = `${state.mateoRegalos.length} items`;
+  const meriendas = state.mateoMeriendas.slice().sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || '')));
+  document.getElementById('mateo-home-meriendas').innerHTML = meriendas.length
+    ? `<div class="compact-list">${meriendas.slice(0, 5).map(item => `<div class="compact-row"><span>${dateFmt(item.fecha)}</span><strong>${esc(item.texto || 'Merienda Mateo')}</strong></div>`).join('')}</div>`
+    : '<div class="empty">Sin meriendas agendadas.</div>';
+  document.getElementById('mateo-home-meriendas-count').textContent = `${meriendas.length} fechas`;
+}
+function renderMateoList(kind) {
+  const key = mateoListKey(kind);
+  const body = document.getElementById(`mateo-${kind}-body`);
+  if (!body) return;
+  const rows = state[key] || [];
+  body.innerHTML = rows.length ? rows.map(item => `<tr>
+    <td><div class="compact-row ${kind === 'medicos' && !item.fecha ? 'pending' : ''}"><span>${esc(item.texto || '')}</span>${kind === 'medicos' ? `<strong>${esc(mateoDoctorStatus(item))}</strong>` : ''}</div></td>
+    <td class="right"><button class="btn sm" onclick="openMateoListModal('${kind}','${item.id}')">Editar</button><button class="btn sm danger" onclick="deleteMateoListItem('${kind}','${item.id}')">Eliminar</button></td>
+  </tr>`).join('') : '<tr><td colspan="2"><div class="empty">Sin datos cargados.</div></td></tr>';
+}
+function openMateoListModal(kind, id = '') {
+  const key = mateoListKey(kind);
+  const item = id ? state[key].find(row => row.id === id) : null;
+  const titles = { medicamentos: 'Medicamento', medicos: 'Médico para agendar', regalos: 'Posible regalo' };
+  document.getElementById('mateo-list-kind').value = kind;
+  document.getElementById('mateo-list-id').value = item?.id || '';
+  document.getElementById('mateo-list-text').value = item?.texto || '';
+  document.getElementById('mateo-list-date').value = item?.fecha || '';
+  document.getElementById('mateo-list-month').value = item?.mesAgenda || '';
+  document.getElementById('mateo-list-date-wrap').classList.toggle('hidden', kind !== 'medicos');
+  document.getElementById('mateo-list-month-wrap').classList.toggle('hidden', kind !== 'medicos');
+  document.getElementById('mateo-list-title').textContent = item ? `Editar ${titles[kind]}` : `Agregar ${titles[kind]}`;
+  openModal('modal-mateo-list');
+}
+function saveMateoListItem() {
+  const kind = document.getElementById('mateo-list-kind').value;
+  const id = document.getElementById('mateo-list-id').value;
+  const texto = document.getElementById('mateo-list-text').value.trim();
+  const fecha = document.getElementById('mateo-list-date').value;
+  const mesAgenda = document.getElementById('mateo-list-month').value;
+  const key = mateoListKey(kind);
+  if (!texto) return toast('Ingresá un detalle.');
+  if (id) {
+    const item = state[key].find(row => row.id === id);
+    if (item) Object.assign(item, { texto, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) });
+  } else state[key].push({ id: uid(), texto, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) });
+  save();
+  closeModal('modal-mateo-list');
+  renderMateo();
+  toast('Guardado');
+}
+function addMateoMerienda() {
+  const fecha = document.getElementById('mateo-merienda-fecha').value;
+  if (!fecha) return toast('Elegí una fecha.');
+  if (!state.mateoMeriendas.some(item => item.fecha === fecha)) state.mateoMeriendas.push({ id: uid(), fecha, texto: 'Merienda Mateo' });
+  state.mateoMeriendas.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  save();
+  renderMateo();
+  toast('Merienda agregada');
+}
+function renderMateoMeriendas() {
+  const body = document.getElementById('mateo-meriendas-body');
+  const input = document.getElementById('mateo-merienda-fecha');
+  if (input && !input.value) input.value = today();
+  if (!body) return;
+  body.innerHTML = state.mateoMeriendas.length ? state.mateoMeriendas.map(item => `<tr>
+    <td><div class="compact-row"><span>${dateFmt(item.fecha)}</span></div></td><td><div class="compact-row"><strong>${esc(item.texto || 'Merienda Mateo')}</strong></div></td>
+    <td class="right"><button class="btn sm danger" onclick="deleteMateoMerienda('${item.id}')">Eliminar</button></td>
+  </tr>`).join('') : '<tr><td colspan="3"><div class="empty">Sin meriendas agendadas.</div></td></tr>';
+}
+function deleteMateoMerienda(id) {
+  state.mateoMeriendas = state.mateoMeriendas.filter(item => item.id !== id);
+  save();
+  renderMateo();
+  toast('Merienda eliminada');
+}
+function rowObjectsFromSheet(ws) {
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+  if (!rows.length) return [];
+  const headerIndex = rows.findIndex(row => row.some(cell => /fecha|almuerzo|cena|producto|item|compra|categoria|lugar/i.test(String(cell || ''))));
+  const header = (rows[headerIndex >= 0 ? headerIndex : 0] || []).map(cell => normalizeText(cell));
+  return rows.slice((headerIndex >= 0 ? headerIndex : 0) + 1).map(row => {
+    const obj = {};
+    header.forEach((key, i) => { if (key) obj[key] = row[i]; });
+    obj.__cells = row;
+    return obj;
+  });
+}
+function rowValue(row, keys) {
+  for (const key of keys) {
+    const norm = normalizeText(key);
+    const found = Object.keys(row).find(k => k === norm || k.includes(norm) || norm.includes(k));
+    if (found && String(row[found] || '').trim()) return String(row[found]).trim();
+  }
+  return '';
+}
+const MENU_MONTHS = {
+  enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6, julio: 7, agosto: 8,
+  setiembre: 9, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12
+};
+const MENU_WEEK_DAYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+function sheetRows(ws) {
+  return XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+}
+function menuMonthFromRows(rows) {
+  for (const row of rows.slice(0, 6)) {
+    for (const cell of row) {
+      const key = normalizeText(cell);
+      if (MENU_MONTHS[key]) return MENU_MONTHS[key];
+    }
+  }
+  return new Date().getMonth() + 1;
+}
+function isoFromDayMonth(day, month, year = new Date().getFullYear()) {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+function parseWideMenuRows(rows) {
+  const month = menuMonthFromRows(rows);
+  const year = new Date().getFullYear();
+  const headerIndex = rows.findIndex(row => row.some(cell => MENU_WEEK_DAYS.includes(normalizeText(cell))));
+  if (headerIndex < 0) return [];
+  const headers = rows[headerIndex].map(normalizeText);
+  const dayCols = headers.map((h, i) => MENU_WEEK_DAYS.includes(h) ? i : -1).filter(i => i >= 0);
+  const results = new Map();
+  for (let i = headerIndex + 1; i < rows.length; i++) {
+    const row = rows[i];
+    const mealKind = normalizeText(row[2] || row.find(cell => ['almuerzo', 'cena'].includes(normalizeText(cell))) || '');
+    if (!['almuerzo', 'cena'].includes(mealKind)) continue;
+    const rangeText = String(row[1] || rows[i - 1]?.[1] || '').trim();
+    const match = rangeText.match(/(\d{1,2})(?:\/(\d{1,2}))?\s+al\s+\d{1,2}(?:\/(\d{1,2}))?/i);
+    if (!match) continue;
+    const startDay = Number(match[1]);
+    const startMonth = Number(match[2] || month);
+    const startDate = new Date(year, startMonth - 1, startDay);
+    dayCols.forEach((col, offset) => {
+      const value = String(row[col] || '').trim();
+      if (!value) return;
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + offset);
+      const fecha = date.toISOString().slice(0, 10);
+      const current = results.get(fecha) || { id: `menu-${fecha}`, fecha, almuerzo: '', cena: '' };
+      current[mealKind] = value;
+      results.set(fecha, current);
+    });
+  }
+  return [...results.values()];
+}
+function workbookRows(file) {
+  return file.arrayBuffer().then(data => {
+    const wb = XLSX.read(data, { type: 'array', cellDates: true });
+    return wb.SheetNames.flatMap(name => sheetRows(wb.Sheets[name]));
+  });
+}
+function parseMenuRow(row) {
+  const fecha = parseDateValue(rowValue(row, ['fecha', 'dia', 'date'])) || row.__cells?.map(parseDateValue).find(Boolean);
+  if (!fecha) return null;
+  let almuerzo = rowValue(row, ['almuerzo', 'comida almuerzo', 'lunch']);
+  let cena = rowValue(row, ['cena', 'comida cena', 'dinner']);
+  const tipo = normalizeText(rowValue(row, ['tipo', 'momento', 'comida']));
+  const plato = rowValue(row, ['plato', 'menu', 'comida', 'preparacion']);
+  if (!almuerzo && tipo.includes('almuerzo')) almuerzo = plato;
+  if (!cena && tipo.includes('cena')) cena = plato;
+  if (!almuerzo && !cena) return null;
+  return { id: `menu-${fecha}`, fecha, almuerzo, cena };
+}
+function parseShoppingRow(row) {
+  const item = rowValue(row, ['producto', 'item', 'articulo', 'compra', 'ingrediente']);
+  if (!item) return null;
+  const categoria = rowValue(row, ['categoria', 'lugar', 'donde', 'comprar en', 'tienda']) || 'Sin categoría';
+  const cantidad = rowValue(row, ['cantidad', 'cant', 'unidad']);
+  const notas = rowValue(row, ['notas', 'observaciones', 'detalle']);
+  return { id: uid(), categoria, item, cantidad, notas };
+}
+function mergeMenuRows(menuRows) {
+  const menuByDate = new Map(state.menuDays.map(day => [day.fecha, { ...day }]));
+  menuRows.forEach(menu => {
+    const current = menuByDate.get(menu.fecha) || { id: menu.id || `menu-${menu.fecha}`, fecha: menu.fecha, almuerzo: '', cena: '' };
+    menuByDate.set(menu.fecha, { ...current, almuerzo: menu.almuerzo || current.almuerzo, cena: menu.cena || current.cena });
+  });
+  state.menuDays = [...menuByDate.values()].sort((a, b) => a.fecha.localeCompare(b.fecha));
+}
+function mergeShoppingRows(shoppingRows) {
+  const shoppingByKey = new Map(state.shoppingItems.map(item => [`${normalizeKey(item.categoria)}|${normalizeKey(item.item)}`, { ...item }]));
+  shoppingRows.forEach(item => shoppingByKey.set(`${normalizeKey(item.categoria)}|${normalizeKey(item.item)}`, { ...item, compradoAt: item.compradoAt || '' }));
+  state.shoppingItems = [...shoppingByKey.values()].sort((a, b) => String(a.categoria).localeCompare(String(b.categoria), 'es') || String(a.item).localeCompare(String(b.item), 'es'));
+  state.shoppingCategories = unique(state.shoppingCategories.concat(state.shoppingItems.map(item => item.categoria)).filter(Boolean));
+}
+function downloadMenuTemplate(kind) {
+  if (!window.XLSX) return toast('No está disponible la descarga de Excel.');
+  const wb = XLSX.utils.book_new();
+  if (kind === 'plan') {
+    const year = new Date().getFullYear();
+    const month = new Date().getMonth();
+    const first = new Date(year, month, 1);
+    const firstMonday = new Date(first);
+    firstMonday.setDate(first.getDate() + ((8 - first.getDay()) % 7 || 0));
+    const rows = [
+      ['', '', '', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', '', ''],
+      ['', first.toLocaleDateString('es-UY', { month: 'long' }).toUpperCase(), '', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO']
+    ];
+    for (let week = 0; week < 5; week++) {
+      const start = new Date(firstMonday);
+      start.setDate(firstMonday.getDate() + week * 7);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      const range = `Del ${start.getDate()}/${start.getMonth() + 1} al ${end.getDate()}/${end.getMonth() + 1}`;
+      rows.push(['', range, 'ALMUERZO', '', '', '', '', '', '', '']);
+      rows.push(['', '', 'CENA', '', '', '', '', '', '', '']);
+    }
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Plan de comidas');
+    XLSX.writeFile(wb, 'template-plan-comidas.xlsx');
+  } else {
+    const rows = [
+      { Categoria: 'Supermercado', Producto: 'Huevos', Cantidad: '12', Notas: '' },
+      { Categoria: 'Verdulería', Producto: 'Tomate', Cantidad: '1 kg', Notas: '' }
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Lista de compras');
+    XLSX.writeFile(wb, 'template-lista-compras.xlsx');
+  }
+}
+async function handlePlanFile(event) {
+  const file = event.target.files?.[0];
+  if (!file || !window.XLSX) return;
+  try {
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array', cellDates: true });
+    const wideRows = wb.SheetNames.flatMap(name => parseWideMenuRows(sheetRows(wb.Sheets[name])));
+    const simpleMenu = wb.SheetNames.flatMap(name => rowObjectsFromSheet(wb.Sheets[name]).map(parseMenuRow).filter(Boolean));
+    mergeMenuRows(wideRows.length ? wideRows : simpleMenu);
+    save();
+    renderMenu();
+    toast(`Plan actualizado: ${state.menuDays.length} días.`);
+  } catch (err) {
+    toast('No pude leer ese Excel de menú.');
+  } finally {
+    event.target.value = '';
+  }
+}
+async function handleShoppingFile(event) {
+  const file = event.target.files?.[0];
+  if (!file || !window.XLSX) return;
+  try {
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array', cellDates: true });
+    const shoppingRows = wb.SheetNames.flatMap(name => rowObjectsFromSheet(wb.Sheets[name]).map(parseShoppingRow).filter(Boolean));
+    mergeShoppingRows(shoppingRows);
+    save();
+    renderMenu();
+    toast(`Lista actualizada: ${state.shoppingItems.length} compras.`);
+  } catch (err) {
+    toast('No pude leer ese Excel de compras.');
+  } finally {
+    event.target.value = '';
+  }
+}
+async function handleMenuFile(event) {
+  const file = event.target.files?.[0];
+  if (!file || !window.XLSX) return;
+  try {
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array', cellDates: true });
+    const wideRows = wb.SheetNames.flatMap(name => parseWideMenuRows(sheetRows(wb.Sheets[name])));
+    const simpleRows = wb.SheetNames.flatMap(name => rowObjectsFromSheet(wb.Sheets[name]));
+    const simpleMenu = simpleRows.map(parseMenuRow).filter(Boolean);
+    const shoppingRows = simpleRows.map(parseShoppingRow).filter(Boolean);
+    mergeMenuRows(wideRows.length ? wideRows : simpleMenu);
+    mergeShoppingRows(shoppingRows);
+    save();
+    renderMenu();
+    toast(`Menú actualizado: ${state.menuDays.length} días y ${state.shoppingItems.length} compras.`);
+  } catch (err) {
+    toast('No pude leer ese Excel de menú.');
+  } finally {
+    event.target.value = '';
+  }
 }
 function openPresupuesto() {
   fillSelect(document.getElementById('p-categoria'), categoryNames('gasto'));
@@ -2884,7 +4121,7 @@ function guardarComprobante() {
   const monto = Number(document.getElementById('r-monto').value);
   const cuentaId = document.getElementById('r-cuenta').value;
   const categoria = document.getElementById('r-categoria').value;
-  if (!monto || !cuentaId || !categoria) return toast('Completa categoria, monto y cuenta.');
+  if (!monto || !cuentaId || !categoria) return toast('Completá categoría, monto y cuenta.');
   const desc = document.getElementById('r-desc').value.trim() || categoria;
   learnCategoryRule(`${desc} ${lastReceiptSuggestion?.desc || ''}`, 'gasto', categoria, 'receipt');
   addMovimiento({
@@ -3074,8 +4311,8 @@ function createCategoryFromImport() {
   const tipo = document.getElementById('import-new-type').value;
   const grupo = document.getElementById('import-new-group').value.trim();
   const recurrente = tipo === 'gasto' && document.getElementById('import-new-recurring').checked;
-  if (!nombre) return toast('Ingresa un nombre de categoria.');
-  if (state.categories.some(c => c.tipo === tipo && normalizeKey(c.nombre) === normalizeKey(nombre))) return toast('Esa categoria ya existe.');
+  if (!nombre) return toast('Ingresá un nombre de categoría.');
+  if (state.categories.some(c => c.tipo === tipo && normalizeKey(c.nombre) === normalizeKey(nombre))) return toast('Esa categoría ya existe.');
   state.categories.push({ id: uid(), nombre, tipo, grupo, recurrente });
   document.getElementById('import-new-category').value = '';
   document.getElementById('import-new-group').value = '';
@@ -3083,7 +4320,7 @@ function createCategoryFromImport() {
   save();
   refreshAll();
   showPage('importacion');
-  toast('Categoria creada');
+  toast('Categoría creada');
 }
 function exportImportPreviewExcel() {
   if (!window.XLSX) return toast('No se pudo cargar la libreria de Excel.');
@@ -3174,7 +4411,7 @@ function confirmBankImport() {
 function exportCSV() {
   const movs = getFilteredMovimientos();
   if (!movs.length) return toast('No hay movimientos para exportar.');
-  const header = ['Fecha','Descripcion','Grupo','Categoria','Cuenta','Tipo','Monto'];
+  const header = ['Fecha','Descripción','Grupo','Categoría','Cuenta','Tipo','Monto'];
   const lines = movs.map(m => {
     const cuenta = state.cuentas.find(c => c.id === m.cuentaId);
     return [m.fecha, m.desc, categoryGroup(m.categoria), m.categoria, cuenta ? cuenta.nombre : '', m.tipo, m.monto]
@@ -3198,10 +4435,26 @@ function exportExcel() {
   const cuentas = state.cuentas.map(c => ({ Nombre: c.nombre, Tipo: c.tipo, SaldoInicial: c.saldoInicial, SaldoActual: calcCuenta(c.id) }));
   const presupuestos = state.presupuestos.map(p => ({ Mes: p.mes, Categoria: p.categoria, Monto: p.monto }));
   const categorias = state.categories.map(c => ({ Nombre: c.nombre, Tipo: c.tipo, Grupo: c.grupo || '', Recurrente: c.recurrente ? 'Si' : 'No' }));
+  const menu = state.menuDays.map(d => ({ Fecha: d.fecha, Dia: dayName(d.fecha), Almuerzo: d.almuerzo || '', Cena: d.cena || '' }));
+  const compras = state.shoppingItems.map(i => ({ Categoria: i.categoria || '', Producto: i.item || '', Cantidad: i.cantidad || '', Notas: i.notas || '' }));
+  const categoriasCompra = state.shoppingCategories.map(c => ({ Categoria: c }));
+  const mateoDatos = state.mateoData.map(i => ({ Categoria: i.nombre, Valor: i.valor || '' }));
+  const mateoMedicamentos = state.mateoMedicamentos.map(i => ({ Detalle: i.texto || '' }));
+  const mateoMedicos = state.mateoMedicos.map(i => ({ Detalle: i.texto || '', Fecha: i.fecha || '', 'Mes para agendar': i.mesAgenda || '', Estado: i.fecha ? 'Agendado' : 'Para agendar' }));
+  const mateoRegalos = state.mateoRegalos.map(i => ({ Detalle: i.texto || '' }));
+  const mateoMeriendas = state.mateoMeriendas.map(i => ({ Fecha: i.fecha, Detalle: i.texto || 'Merienda Mateo' }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(movimientos), 'Movimientos');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cuentas), 'Cuentas');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(presupuestos), 'Presupuestos');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categorias), 'Categorias');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(menu), 'Menu');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(compras), 'Compras');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categoriasCompra), 'Categorias compra');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mateoDatos), 'Mateo datos');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mateoMedicamentos), 'Mateo medicamentos');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mateoMedicos), 'Mateo medicos');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mateoRegalos), 'Mateo regalos');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mateoMeriendas), 'Mateo meriendas');
   XLSX.writeFile(wb, `finanzas_hogar_${today()}.xlsx`);
 }
 function bytesToBase64(bytes) {
@@ -3357,6 +4610,14 @@ function exportCurrentViewExcel() {
     name = 'categorias';
     const rows = state.categories.map(c => ({ Nombre: c.nombre, Tipo: c.tipo, Grupo: c.grupo || '', Recurrente: c.recurrente ? 'Si' : 'No' }));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Categorias');
+  } else if (active === 'page-menu') {
+    name = 'menu';
+    const menu = state.menuDays.map(d => ({ Fecha: d.fecha, Dia: dayName(d.fecha), Almuerzo: d.almuerzo || '', Cena: d.cena || '' }));
+    const compras = state.shoppingItems.map(i => ({ Categoria: i.categoria || '', Producto: i.item || '', Cantidad: i.cantidad || '', Notas: i.notas || '' }));
+    const categoriasCompra = state.shoppingCategories.map(c => ({ Categoria: c }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(menu), 'Menu');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(compras), 'Compras');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categoriasCompra), 'Categorias compra');
   } else if (active === 'page-recurrentes') {
     name = 'recurrentes';
     const mes = document.getElementById('recurring-month').value || currentMonth();
@@ -3549,7 +4810,16 @@ function normalizeFinanceState(data) {
     deletedCuentas: Array.isArray(data?.deletedCuentas) ? data.deletedCuentas : [],
     categories: Array.isArray(data?.categories) ? data.categories : [],
     aiRules: Array.isArray(data?.aiRules) ? data.aiRules : [],
-    appUsers: Array.isArray(data?.appUsers) ? data.appUsers : []
+    appUsers: Array.isArray(data?.appUsers) ? data.appUsers : [],
+    menuDays: Array.isArray(data?.menuDays) ? data.menuDays : [],
+    shoppingItems: Array.isArray(data?.shoppingItems) ? data.shoppingItems : [],
+    shoppingCategories: Array.isArray(data?.shoppingCategories) ? data.shoppingCategories : [],
+    mateoData: Array.isArray(data?.mateoData) ? data.mateoData : [],
+    mateoDataInitialized: data?.mateoDataInitialized === true || Array.isArray(data?.mateoData),
+    mateoMedicamentos: Array.isArray(data?.mateoMedicamentos) ? data.mateoMedicamentos : [],
+    mateoMedicos: Array.isArray(data?.mateoMedicos) ? data.mateoMedicos : [],
+    mateoRegalos: Array.isArray(data?.mateoRegalos) ? data.mateoRegalos : [],
+    mateoMeriendas: Array.isArray(data?.mateoMeriendas) ? data.mateoMeriendas : []
   };
 }
 function mergeFinanceStates(localData, cloudData) {
@@ -3563,6 +4833,15 @@ function mergeFinanceStates(localData, cloudData) {
     categories: local.categories.map(c => ({ ...c })),
     aiRules: local.aiRules.map(r => ({ ...r })),
     appUsers: local.appUsers.map(u => ({ ...u })),
+    menuDays: local.menuDays.map(d => ({ ...d })),
+    shoppingItems: local.shoppingItems.map(i => ({ ...i })),
+    shoppingCategories: unique(local.shoppingCategories.concat(cloud.shoppingCategories)),
+    mateoData: local.mateoData.map(i => ({ ...i })),
+    mateoDataInitialized: local.mateoDataInitialized || cloud.mateoDataInitialized,
+    mateoMedicamentos: local.mateoMedicamentos.map(i => ({ ...i })),
+    mateoMedicos: local.mateoMedicos.map(i => ({ ...i })),
+    mateoRegalos: local.mateoRegalos.map(i => ({ ...i })),
+    mateoMeriendas: local.mateoMeriendas.map(i => ({ ...i })),
     deletedMovimientos: [...new Set([...local.deletedMovimientos, ...cloud.deletedMovimientos])],
     deletedCuentas: [...new Set([...local.deletedCuentas, ...cloud.deletedCuentas])]
   };
@@ -3581,6 +4860,14 @@ function mergeFinanceStates(localData, cloudData) {
   mergeByIdOrKey(merged.presupuestos, cloud.presupuestos.map(p => ({ ...p, key: budgetKey(p) })), budgetKey);
   mergeByIdOrKey(merged.aiRules, cloud.aiRules, r => `${normalizeKey(r.tipo)}|${normalizeKey(r.key)}`);
   mergeByIdOrKey(merged.appUsers, cloud.appUsers, u => normalizeUsername(u.username));
+  mergeByIdOrKey(merged.menuDays, cloud.menuDays, d => d.fecha);
+  mergeByIdOrKey(merged.shoppingItems, cloud.shoppingItems, i => `${normalizeKey(i.categoria)}|${normalizeKey(i.item)}`);
+  mergeByIdOrKey(merged.mateoData, cloud.mateoData, i => normalizeKey(i.nombre));
+  mergeByIdOrKey(merged.mateoMedicamentos, cloud.mateoMedicamentos, i => normalizeKey(i.texto));
+  mergeByIdOrKey(merged.mateoMedicos, cloud.mateoMedicos, i => normalizeKey(i.texto));
+  mergeByIdOrKey(merged.mateoRegalos, cloud.mateoRegalos, i => normalizeKey(i.texto));
+  mergeByIdOrKey(merged.mateoMeriendas, cloud.mateoMeriendas, i => i.fecha);
+  merged.shoppingCategories = unique(merged.shoppingCategories.concat(merged.shoppingItems.map(i => i.categoria)));
   return merged;
 }
 async function downloadFromCloud() {
@@ -3589,7 +4876,7 @@ async function downloadFromCloud() {
   const { data, error } = await supabaseClient.from('finance_states').select('data, updated_at').eq('user_id', cloudSession.user.id).single();
   if (error) return setCloudText('sync-status', 'No encontre datos en Supabase para este usuario.');
   if (!confirm('Esto reemplaza los datos locales con lo guardado en Supabase. Continuar?')) return;
-  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], deletedCuentas: [], categories: [], aiRules: [], appUsers: [], ...(data.data || {}) };
+  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], deletedCuentas: [], categories: [], aiRules: [], appUsers: [], menuDays: [], shoppingItems: [], shoppingCategories: [], mateoData: [], mateoDataInitialized: false, mateoMedicamentos: [], mateoMedicos: [], mateoRegalos: [], mateoMeriendas: [], ...(data.data || {}) };
   ensureStateShape();
   save();
   refreshAll();
@@ -3597,7 +4884,10 @@ async function downloadFromCloud() {
 }
 function refreshAll() {
   renderSidebar();
+  renderHome();
   renderDashboard();
+  renderMenu();
+  renderMateo();
   renderMovimientos();
   renderCuentas();
   renderPresupuesto();
@@ -3614,6 +4904,8 @@ configureSidebar();
 window.addEventListener('resize', configureSidebar);
 refreshSelectors();
 refreshAll();
+updateSidebarContext(document.querySelector('.page.active')?.id.replace('page-', '') || 'home');
+updateBackButton();
 if (IS_DEMO) updateAuthUI();
 else initSupabase().catch(() => {});
 </script>
