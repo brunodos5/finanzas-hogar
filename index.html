@@ -173,6 +173,10 @@
   .check-row input { width: auto; }
   .row-check { width: 34px; text-align: center; }
   .row-check input { width: auto; }
+  .row-drag-cell { width: 34px; text-align: center; color: var(--text3); }
+  .drag-handle { display: inline-grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface2); color: var(--text2); cursor: grab; user-select: none; touch-action: none; font-weight: 700; }
+  tr.dragging { opacity: .48; }
+  tr.drag-over { outline: 2px solid color-mix(in srgb, var(--green) 58%, transparent); outline-offset: -2px; }
   .recurring-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
   .recurring-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: color-mix(in srgb, var(--surface2) 35%, transparent); }
   .recurring-item strong { display: block; margin-bottom: 4px; }
@@ -286,13 +290,18 @@
     .metrics { gap: 8px; margin-bottom: 10px; }
     .metric { padding: 10px 12px; }
     .metric span { font-size: 10px; }
-    .metric strong { font-size: 20px; margin-top: 2px; }
+    .metric strong { font-size: 20px; margin-top: 2px; max-width: 100%; overflow-wrap: anywhere; }
     .page-head { align-items: stretch; gap: 8px; margin-bottom: 10px; }
     .home-quick-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
     .home-quick-actions .btn { min-height: 40px; padding: 7px 8px; font-size: 13px; line-height: 1.2; }
     h2 { font-size: 22px; }
     .page > .card, .page > .grid, .menu-panel > .card, .mateo-panel > .card { margin-bottom: 10px; }
     .card, .card-body, .home-widget, .grid, .two-col > *, #page-dashboard, #page-dashboard > * { min-width: 0; max-width: 100%; }
+    #page-dashboard { width: 100%; overflow-x: clip; }
+    #page-dashboard .metrics, #page-dashboard .two-col, #page-dashboard .card, #page-dashboard .card-body, #page-dashboard .chart-box { width: 100%; min-width: 0; max-width: 100%; }
+    #page-dashboard .budget-row { min-width: 0; flex-wrap: wrap; }
+    #page-dashboard .budget-row > * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+    #page-dashboard .recurring-grid, #page-dashboard .recurring-item { min-width: 0; max-width: 100%; }
     .card-head { padding: 9px 10px; flex-wrap: wrap; align-items: flex-start; }
     .card-body { padding: 10px; }
     .home-widgets, .module-grid, .menu-hero, .shopping-grid, .account-grid { grid-template-columns: 1fr; gap: 8px; }
@@ -338,7 +347,7 @@
     #page-menu .menu-panel[data-menu-panel="home"] .module-card .btn { white-space: nowrap; }
     .compact-list { gap: 6px; }
     .compact-row { align-items: flex-start; padding: 7px 8px; gap: 8px; }
-    .chart-box { height: 220px; }
+    .chart-box { height: 220px; overflow: hidden; }
     .table-wrap { margin: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     #page-dashboard .card { overflow: hidden; }
     #page-dashboard .chart-box canvas { width: 100% !important; height: 100% !important; }
@@ -346,14 +355,15 @@
     #page-dashboard .table-wrap table { display: block; width: 100%; min-width: 0; }
     #page-dashboard .table-wrap thead { display: none; }
     #page-dashboard .table-wrap tbody { display: grid; gap: 8px; width: 100%; }
-    #page-dashboard .table-wrap tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--surface2) 28%, transparent); }
-    #page-dashboard .table-wrap td { display: block; border: 0; padding: 0; min-width: 0; background: transparent; }
+    #page-dashboard .table-wrap tr { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--surface2) 28%, transparent); }
+    #page-dashboard .table-wrap td { display: block; border: 0; padding: 0; min-width: 0; max-width: 100%; background: transparent; overflow-wrap: anywhere; }
     #page-dashboard .table-wrap td:nth-child(1) { grid-column: 1; color: var(--text2); font-size: 12px; }
     #page-dashboard .table-wrap td:nth-child(2) { grid-column: 1; font-weight: 700; overflow-wrap: anywhere; }
     #page-dashboard .table-wrap td:nth-child(3), #page-dashboard .table-wrap td:nth-child(4) { grid-column: 1; color: var(--text2); font-size: 12px; }
     #page-dashboard .table-wrap td:nth-child(3) .badge { max-width: 100%; }
-    #page-dashboard .table-wrap td:nth-child(5) { grid-column: 2; grid-row: 1 / span 4; align-self: center; white-space: nowrap; }
+    #page-dashboard .table-wrap td:nth-child(5) { grid-column: 1; grid-row: auto; align-self: start; justify-self: start; white-space: normal; margin-top: 2px; }
     th, td { padding: 7px 8px; }
+    .row-drag-cell { display: none; }
     .modal-backdrop { padding: 8px; align-items: flex-end; }
     .modal { width: 100%; max-height: 90dvh; border-radius: 12px 12px 8px 8px; }
     .modal-head, .modal-foot { padding: 11px 12px; }
@@ -546,31 +556,31 @@
       <div class="mateo-panel" data-mateo-panel="datos">
         <div class="card">
           <div class="card-head"><span class="card-title">Datos</span><div class="actions"><button class="btn sm primary" onclick="openMateoDataModal()">+ Dato</button></div></div>
-          <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Valor</th><th></th></tr></thead><tbody id="mateo-data-body"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th class="row-drag-cell"></th><th>Categoría</th><th>Valor</th><th></th></tr></thead><tbody id="mateo-data-body"></tbody></table></div>
         </div>
       </div>
       <div class="mateo-panel" data-mateo-panel="medicamentos">
         <div class="card">
           <div class="card-head"><span class="card-title">Medicamentos</span><div class="actions"><button class="btn sm primary" onclick="openMateoListModal('medicamentos')">+ Medicamento</button></div></div>
-          <div class="table-wrap"><table><thead><tr><th>Detalle</th><th></th></tr></thead><tbody id="mateo-medicamentos-body"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th class="row-drag-cell"></th><th>Detalle</th><th></th></tr></thead><tbody id="mateo-medicamentos-body"></tbody></table></div>
         </div>
       </div>
       <div class="mateo-panel" data-mateo-panel="medicos">
         <div class="card">
           <div class="card-head"><span class="card-title">Agenda médicos</span><div class="actions"><button class="btn sm primary" onclick="openMateoListModal('medicos')">+ Médico</button></div></div>
-          <div class="table-wrap"><table><thead><tr><th>Detalle</th><th></th></tr></thead><tbody id="mateo-medicos-body"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th class="row-drag-cell"></th><th>Detalle</th><th></th></tr></thead><tbody id="mateo-medicos-body"></tbody></table></div>
         </div>
       </div>
       <div class="mateo-panel" data-mateo-panel="regalos">
         <div class="card">
           <div class="card-head"><span class="card-title">Posibles regalos</span><div class="actions"><button class="btn sm primary" onclick="openMateoListModal('regalos')">+ Regalo</button></div></div>
-          <div class="table-wrap"><table><thead><tr><th>Detalle</th><th></th></tr></thead><tbody id="mateo-regalos-body"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th class="row-drag-cell"></th><th>Detalle</th><th></th></tr></thead><tbody id="mateo-regalos-body"></tbody></table></div>
         </div>
       </div>
       <div class="mateo-panel" data-mateo-panel="meriendas">
         <div class="card">
           <div class="card-head"><span class="card-title">Meriendas</span><div class="actions"><input id="mateo-merienda-fecha" type="date"><button class="btn sm primary" onclick="addMateoMerienda()">+ Fecha</button></div></div>
-          <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Detalle</th><th></th></tr></thead><tbody id="mateo-meriendas-body"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th class="row-drag-cell"></th><th>Fecha</th><th>Detalle</th><th></th></tr></thead><tbody id="mateo-meriendas-body"></tbody></table></div>
         </div>
       </div>
     </section>
@@ -651,7 +661,7 @@
         <div class="card">
           <div class="card-head"><span class="card-title">Plan de comidas</span><div class="actions"><span class="muted" id="menu-count"></span><button class="btn sm" onclick="downloadMenuTemplate('plan')">Template</button><button class="btn sm" onclick="document.getElementById('menu-plan-file').click()">Importar</button><button class="btn sm" onclick="exportCurrentViewExcel()">Excel</button><button class="btn sm primary" onclick="openMealModal()">+ Comida</button><button class="btn sm" onclick="openShoppingItemModal()">+ Compra</button></div></div>
           <div class="table-wrap">
-            <table><thead><tr><th>Fecha</th><th>Día</th><th>Almuerzo</th><th>Cena</th><th></th></tr></thead><tbody id="menu-plan-body"></tbody></table>
+            <table><thead><tr><th class="row-drag-cell"></th><th>Fecha</th><th>Día</th><th>Almuerzo</th><th>Cena</th><th></th></tr></thead><tbody id="menu-plan-body"></tbody></table>
           </div>
         </div>
       </div>
@@ -1453,11 +1463,11 @@ function applyDeleteMarkers(target = state) {
     !target.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', item.categoria))
   );
   target.shoppingCategories = (target.shoppingCategories || []).filter(item => !target.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', item)));
-  target.mateoData = (target.mateoData || []).filter(item => !target.deletedMateoDataIds.includes(item.id) && !target.deletedMateoData.includes(deletionKeyFor('mateoData', item)));
-  target.mateoMedicamentos = (target.mateoMedicamentos || []).filter(item => !target.deletedMateoMedicamentoIds.includes(item.id) && !target.deletedMateoMedicamentos.includes(deletionKeyFor('mateoMedicamentos', item)));
-  target.mateoMedicos = (target.mateoMedicos || []).filter(item => !target.deletedMateoMedicoIds.includes(item.id) && !target.deletedMateoMedicos.includes(deletionKeyFor('mateoMedicos', item)));
-  target.mateoRegalos = (target.mateoRegalos || []).filter(item => !target.deletedMateoRegaloIds.includes(item.id) && !target.deletedMateoRegalos.includes(deletionKeyFor('mateoRegalos', item)));
-  target.mateoMeriendas = (target.mateoMeriendas || []).filter(item => !target.deletedMateoMeriendaIds.includes(item.id) && !target.deletedMateoMeriendas.includes(deletionKeyFor('mateoMeriendas', item)));
+  target.mateoData = (target.mateoData || []).filter(item => isDeletedItem(item) || (!target.deletedMateoDataIds.includes(item.id) && !target.deletedMateoData.includes(deletionKeyFor('mateoData', item))));
+  target.mateoMedicamentos = (target.mateoMedicamentos || []).filter(item => isDeletedItem(item) || (!target.deletedMateoMedicamentoIds.includes(item.id) && !target.deletedMateoMedicamentos.includes(deletionKeyFor('mateoMedicamentos', item))));
+  target.mateoMedicos = (target.mateoMedicos || []).filter(item => isDeletedItem(item) || (!target.deletedMateoMedicoIds.includes(item.id) && !target.deletedMateoMedicos.includes(deletionKeyFor('mateoMedicos', item))));
+  target.mateoRegalos = (target.mateoRegalos || []).filter(item => isDeletedItem(item) || (!target.deletedMateoRegaloIds.includes(item.id) && !target.deletedMateoRegalos.includes(deletionKeyFor('mateoRegalos', item))));
+  target.mateoMeriendas = (target.mateoMeriendas || []).filter(item => isDeletedItem(item) || (!target.deletedMateoMeriendaIds.includes(item.id) && !target.deletedMateoMeriendas.includes(deletionKeyFor('mateoMeriendas', item))));
   return target;
 }
 function esc(value) {
@@ -2481,8 +2491,97 @@ function itemUpdatedAt(item) {
   const time = value ? Date.parse(value) : 0;
   return Number.isFinite(time) ? time : 0;
 }
+function isDeletedItem(item) {
+  return Boolean(item?.deletedAt);
+}
+function activeItems(items) {
+  return (Array.isArray(items) ? items : []).filter(item => !isDeletedItem(item));
+}
+function activeMateoItems(key) {
+  return activeItems(state[key]);
+}
+function orderValue(item, fallback = 0) {
+  const value = Number(item?.sortOrder);
+  return Number.isFinite(value) ? value : fallback;
+}
+function orderedMateoItems(key) {
+  return activeMateoItems(key)
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => orderValue(a.item, a.index) - orderValue(b.item, b.index) || a.index - b.index)
+    .map(row => row.item);
+}
+function nextMateoOrder(key) {
+  return orderedMateoItems(key).reduce((max, item, index) => Math.max(max, orderValue(item, index)), -1) + 1;
+}
+let rowDragState = null;
+function dragHandleMarkup() {
+  return '<td class="row-drag-cell"><span class="drag-handle" title="Arrastrar">|||</span></td>';
+}
+function startRowDrag(event, scope, id) {
+  if (window.matchMedia('(max-width: 900px)').matches) return;
+  rowDragState = { scope, id };
+  event.currentTarget.classList.add('dragging');
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', `${scope}:${id}`);
+  }
+}
+function rowDragOver(event, scope) {
+  if (!rowDragState || rowDragState.scope !== scope) return;
+  event.preventDefault();
+  event.currentTarget.classList.add('drag-over');
+}
+function rowDragLeave(event) {
+  event.currentTarget.classList.remove('drag-over');
+}
+function clearRowDrag() {
+  document.querySelectorAll('tr.dragging, tr.drag-over').forEach(row => row.classList.remove('dragging', 'drag-over'));
+  rowDragState = null;
+}
+function moveIdBefore(ids, fromId, toId) {
+  if (!fromId || !toId || fromId === toId) return ids;
+  const next = ids.filter(id => id !== fromId);
+  const toIndex = next.indexOf(toId);
+  next.splice(toIndex < 0 ? next.length : toIndex, 0, fromId);
+  return next;
+}
+function reorderMateoCollection(key, fromId, toId) {
+  if (!fromId || !toId || fromId === toId) return;
+  const ids = moveIdBefore(orderedMateoItems(key).map(item => item.id), fromId, toId);
+  const now = new Date().toISOString();
+  state[key].forEach(item => {
+    const index = ids.indexOf(item.id);
+    if (index >= 0) Object.assign(item, { sortOrder: index, updatedAt: now });
+  });
+  save();
+  renderMateo();
+}
+function dropMateoRow(event, key, toId) {
+  event.preventDefault();
+  if (rowDragState?.scope === key) reorderMateoCollection(key, rowDragState.id, toId);
+  clearRowDrag();
+}
+function swapMealRows(fromFecha, toFecha) {
+  if (!fromFecha || !toFecha || fromFecha === toFecha) return;
+  const from = state.menuDays.find(day => day.fecha === fromFecha);
+  const to = state.menuDays.find(day => day.fecha === toFecha);
+  if (!from || !to) return;
+  const now = new Date().toISOString();
+  [from.almuerzo, to.almuerzo] = [to.almuerzo, from.almuerzo];
+  [from.cena, to.cena] = [to.cena, from.cena];
+  from.updatedAt = now;
+  to.updatedAt = now;
+  save();
+  renderMenu();
+  toast('Comidas intercambiadas');
+}
+function dropMealRow(event, toFecha) {
+  event.preventDefault();
+  if (rowDragState?.scope === 'menuDays') swapMealRows(rowDragState.id, toFecha);
+  clearRowDrag();
+}
 function normalizeFinanceState(data) {
-  return {
+  const normalized = {
     cuentas: Array.isArray(data?.cuentas) ? data.cuentas : [],
     movimientos: Array.isArray(data?.movimientos) ? data.movimientos : [],
     presupuestos: Array.isArray(data?.presupuestos) ? data.presupuestos : [],
@@ -3761,10 +3860,11 @@ function renderMenu() {
   todayEl.innerHTML = renderMealCard(todayISO, 'Hoy') + renderMealCard(tomorrowISO, 'Mañana');
   const rows = state.menuDays.slice().sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
   document.getElementById('menu-count').textContent = `${rows.length} días`;
-  document.getElementById('menu-plan-body').innerHTML = rows.length ? rows.map(day => `<tr>
+  document.getElementById('menu-plan-body').innerHTML = rows.length ? rows.map(day => `<tr draggable="true" ondragstart="startRowDrag(event,'menuDays','${day.fecha}')" ondragover="rowDragOver(event,'menuDays')" ondragleave="rowDragLeave(event)" ondragend="clearRowDrag()" ondrop="dropMealRow(event,'${day.fecha}')">
+    ${dragHandleMarkup()}
     <td>${dateFmt(day.fecha)}</td><td>${esc(dayName(day.fecha))}</td><td>${esc(mealText(day.almuerzo))}</td><td>${esc(mealText(day.cena))}</td>
     <td class="right"><button class="btn sm" onclick="openMealModal('${day.fecha}')">Editar</button><button class="btn sm danger" onclick="deleteMeal('${day.fecha}')">Eliminar</button></td>
-  </tr>`).join('') : '<tr><td colspan="5" class="empty">Cargá un Excel para ver el menú.</td></tr>';
+  </tr>`).join('') : '<tr><td colspan="6" class="empty">Cargá un Excel para ver el menú.</td></tr>';
   const shoppingPreview = document.getElementById('shopping-preview');
   const shoppingList = document.getElementById('shopping-list');
   const shoppingByPlace = document.getElementById('shopping-by-place');
@@ -3797,11 +3897,12 @@ function saveMealFromModal() {
   const fecha = document.getElementById('meal-fecha').value;
   const almuerzo = document.getElementById('meal-almuerzo').value.trim();
   const cena = document.getElementById('meal-cena').value.trim();
+  const updatedAt = new Date().toISOString();
   if (!fecha) return toast('Elegí una fecha.');
   if (!almuerzo && !cena) return toast('Agregá almuerzo o cena.');
   forgetDeleted('deletedMenuDays', fecha);
   state.menuDays = state.menuDays.filter(day => day.fecha !== oldFecha && day.fecha !== fecha);
-  state.menuDays.push({ id: `menu-${fecha}`, fecha, almuerzo, cena });
+  state.menuDays.push({ id: `menu-${fecha}`, fecha, almuerzo, cena, updatedAt });
   state.menuDays.sort((a, b) => a.fecha.localeCompare(b.fecha));
   save();
   closeModal('modal-meal');
@@ -3880,7 +3981,7 @@ function renderMateoList(kind) {
   </tr>`).join('') : '<tr><td colspan="2"><div class="empty">Sin datos cargados.</div></td></tr>';
 }
 function openMateoDataModal(id = '') {
-  const item = id ? state.mateoData.find(row => row.id === id) : null;
+  const item = id ? activeMateoItems('mateoData').find(row => row.id === id) : null;
   document.getElementById('mateo-data-id').value = item?.id || '';
   document.getElementById('mateo-data-name').value = item?.nombre || '';
   document.getElementById('mateo-data-value').value = item?.valor || '';
@@ -3891,13 +3992,14 @@ function saveMateoData() {
   const id = document.getElementById('mateo-data-id').value;
   const nombre = document.getElementById('mateo-data-name').value.trim();
   const valor = document.getElementById('mateo-data-value').value.trim();
+  const updatedAt = new Date().toISOString();
   if (!nombre) return toast('Ingresá una categoría.');
   forgetDeleted('deletedMateoData', deletionKeyFor('mateoData', { nombre }));
   if (id) forgetDeleted('deletedMateoDataIds', id);
   if (id) {
     const item = state.mateoData.find(row => row.id === id);
-    if (item) Object.assign(item, { nombre, valor });
-  } else state.mateoData.push({ id: uid(), nombre, valor });
+    if (item) Object.assign(item, { nombre, valor, deletedAt: '', updatedAt });
+  } else state.mateoData.push({ id: uid(), nombre, valor, sortOrder: nextMateoOrder('mateoData'), updatedAt });
   save();
   closeModal('modal-mateo-data');
   renderMateo();
@@ -3906,13 +4008,12 @@ function saveMateoData() {
 function deleteMateoData(id) {
   const item = state.mateoData.find(item => item.id === id);
   const deletedKey = deletionKeyFor('mateoData', item);
+  const updatedAt = new Date().toISOString();
   if (item) rememberDeleted('deletedMateoData', deletedKey);
   rememberDeleted('deletedMateoDataIds', id);
   state.mateoDataInitialized = true;
-  state.mateoData = state.mateoData.filter(item => item.id !== id && deletionKeyFor('mateoData', item) !== deletedKey);
-  applyDeleteMarkers();
+  if (item) Object.assign(item, { deletedAt: updatedAt, updatedAt });
   save();
-  applyDeleteMarkers();
   renderMateo();
   toast('Dato eliminado');
 }
@@ -3949,12 +4050,11 @@ function deleteMateoListItem(kind, id) {
   const marker = { medicamentos: 'deletedMateoMedicamentos', medicos: 'deletedMateoMedicos', regalos: 'deletedMateoRegalos' }[kind];
   const idMarker = { medicamentos: 'deletedMateoMedicamentoIds', medicos: 'deletedMateoMedicoIds', regalos: 'deletedMateoRegaloIds' }[kind];
   const item = state[key].find(item => item.id === id);
+  const updatedAt = new Date().toISOString();
   if (marker && item) rememberDeleted(marker, deletionKeyFor(key, item));
   if (idMarker) rememberDeleted(idMarker, id);
-  state[key] = state[key].filter(item => item.id !== id);
-  applyDeleteMarkers();
+  if (item) Object.assign(item, { deletedAt: updatedAt, updatedAt });
   save();
-  applyDeleteMarkers();
   renderMateo();
   toast('Eliminado');
 }
@@ -3963,11 +4063,17 @@ function renderMateo() {
   document.querySelectorAll('[data-mateo-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.mateoPanel === currentMateoView));
   document.querySelectorAll('[data-mateo-btn]').forEach(btn => btn.classList.toggle('active', btn.dataset.mateoBtn === currentMateoView));
   const dataBody = document.getElementById('mateo-data-body');
+  const mateoData = orderedMateoItems('mateoData');
+  const mateoMedicamentos = orderedMateoItems('mateoMedicamentos');
+  const mateoMedicos = orderedMateoItems('mateoMedicos');
+  const mateoRegalos = orderedMateoItems('mateoRegalos');
+  const mateoMeriendas = orderedMateoItems('mateoMeriendas');
   if (dataBody) {
-    dataBody.innerHTML = state.mateoData.length ? state.mateoData.map(item => `<tr>
+    dataBody.innerHTML = mateoData.length ? mateoData.map(item => `<tr draggable="true" ondragstart="startRowDrag(event,'mateoData','${item.id}')" ondragover="rowDragOver(event,'mateoData')" ondragleave="rowDragLeave(event)" ondragend="clearRowDrag()" ondrop="dropMateoRow(event,'mateoData','${item.id}')">
+      ${dragHandleMarkup()}
       <td>${esc(item.nombre)}</td><td>${esc(item.valor || '')}</td>
       <td class="right"><button class="btn sm" onclick="openMateoDataModal('${item.id}')">Editar</button><button class="btn sm danger" onclick="deleteMateoData('${item.id}')">Eliminar</button></td>
-    </tr>`).join('') : '<tr><td colspan="3"><div class="empty">Sin datos cargados.</div></td></tr>';
+    </tr>`).join('') : '<tr><td colspan="4"><div class="empty">Sin datos cargados.</div></td></tr>';
   }
   renderMateoList('medicamentos');
   renderMateoList('medicos');
@@ -3978,17 +4084,17 @@ function renderMateo() {
   const listPreview = (items, empty = 'Sin datos cargados.') => items.length
     ? `<div class="compact-list">${items.slice(0, 5).map(item => `<div class="compact-row"><span>${esc(item.texto || item.nombre || '')}</span>${item.valor ? `<strong>${esc(item.valor)}</strong>` : ''}</div>`).join('')}</div>`
     : `<div class="empty">${empty}</div>`;
-  dataEl.innerHTML = listPreview(state.mateoData);
-  document.getElementById('mateo-home-data-count').textContent = `${state.mateoData.length} datos`;
-  document.getElementById('mateo-home-medicamentos').innerHTML = listPreview(state.mateoMedicamentos);
-  document.getElementById('mateo-home-medicamentos-count').textContent = `${state.mateoMedicamentos.length} items`;
-  document.getElementById('mateo-home-medicos').innerHTML = state.mateoMedicos.length
-    ? `<div class="compact-list">${state.mateoMedicos.slice(0, 5).map(item => `<div class="compact-row ${item.fecha ? '' : 'pending'}"><span>${esc(item.texto || '')}</span><strong>${esc(mateoDoctorStatus(item))}</strong></div>`).join('')}</div>`
+  dataEl.innerHTML = listPreview(mateoData);
+  document.getElementById('mateo-home-data-count').textContent = `${mateoData.length} datos`;
+  document.getElementById('mateo-home-medicamentos').innerHTML = listPreview(mateoMedicamentos);
+  document.getElementById('mateo-home-medicamentos-count').textContent = `${mateoMedicamentos.length} items`;
+  document.getElementById('mateo-home-medicos').innerHTML = mateoMedicos.length
+    ? `<div class="compact-list">${mateoMedicos.slice(0, 5).map(item => `<div class="compact-row ${item.fecha ? '' : 'pending'}"><span>${esc(item.texto || '')}</span><strong>${esc(mateoDoctorStatus(item))}</strong></div>`).join('')}</div>`
     : '<div class="empty">Sin datos cargados.</div>';
-  document.getElementById('mateo-home-medicos-count').textContent = `${state.mateoMedicos.length} items`;
-  document.getElementById('mateo-home-regalos').innerHTML = listPreview(state.mateoRegalos);
-  document.getElementById('mateo-home-regalos-count').textContent = `${state.mateoRegalos.length} items`;
-  const meriendas = state.mateoMeriendas.slice().sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || '')));
+  document.getElementById('mateo-home-medicos-count').textContent = `${mateoMedicos.length} items`;
+  document.getElementById('mateo-home-regalos').innerHTML = listPreview(mateoRegalos);
+  document.getElementById('mateo-home-regalos-count').textContent = `${mateoRegalos.length} items`;
+  const meriendas = mateoMeriendas.slice();
   document.getElementById('mateo-home-meriendas').innerHTML = meriendas.length
     ? `<div class="compact-list">${meriendas.slice(0, 5).map(item => `<div class="compact-row"><span>${dateFmt(item.fecha)}</span><strong>${esc(item.texto || 'Merienda Mateo')}</strong></div>`).join('')}</div>`
     : '<div class="empty">Sin meriendas agendadas.</div>';
@@ -3998,15 +4104,16 @@ function renderMateoList(kind) {
   const key = mateoListKey(kind);
   const body = document.getElementById(`mateo-${kind}-body`);
   if (!body) return;
-  const rows = state[key] || [];
-  body.innerHTML = rows.length ? rows.map(item => `<tr>
+  const rows = orderedMateoItems(key);
+  body.innerHTML = rows.length ? rows.map(item => `<tr draggable="true" ondragstart="startRowDrag(event,'${key}','${item.id}')" ondragover="rowDragOver(event,'${key}')" ondragleave="rowDragLeave(event)" ondragend="clearRowDrag()" ondrop="dropMateoRow(event,'${key}','${item.id}')">
+    ${dragHandleMarkup()}
     <td><div class="compact-row ${kind === 'medicos' && !item.fecha ? 'pending' : ''}"><span>${esc(item.texto || '')}</span>${kind === 'medicos' ? `<strong>${esc(mateoDoctorStatus(item))}</strong>` : ''}</div></td>
     <td class="right"><button class="btn sm" onclick="openMateoListModal('${kind}','${item.id}')">Editar</button><button class="btn sm danger" onclick="deleteMateoListItem('${kind}','${item.id}')">Eliminar</button></td>
-  </tr>`).join('') : '<tr><td colspan="2"><div class="empty">Sin datos cargados.</div></td></tr>';
+  </tr>`).join('') : '<tr><td colspan="3"><div class="empty">Sin datos cargados.</div></td></tr>';
 }
 function openMateoListModal(kind, id = '') {
   const key = mateoListKey(kind);
-  const item = id ? state[key].find(row => row.id === id) : null;
+  const item = id ? activeMateoItems(key).find(row => row.id === id) : null;
   const titles = { medicamentos: 'Medicamento', medicos: 'Médico para agendar', regalos: 'Posible regalo' };
   document.getElementById('mateo-list-kind').value = kind;
   document.getElementById('mateo-list-id').value = item?.id || '';
@@ -4028,12 +4135,13 @@ function saveMateoListItem() {
   const marker = { medicamentos: 'deletedMateoMedicamentos', medicos: 'deletedMateoMedicos', regalos: 'deletedMateoRegalos' }[kind];
   const idMarker = { medicamentos: 'deletedMateoMedicamentoIds', medicos: 'deletedMateoMedicoIds', regalos: 'deletedMateoRegaloIds' }[kind];
   if (!texto) return toast('Ingresá un detalle.');
+  const updatedAt = new Date().toISOString();
   if (marker) forgetDeleted(marker, deletionKeyFor(key, { texto }));
   if (idMarker && id) forgetDeleted(idMarker, id);
   if (id) {
     const item = state[key].find(row => row.id === id);
-    if (item) Object.assign(item, { texto, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) });
-  } else state[key].push({ id: uid(), texto, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) });
+    if (item) Object.assign(item, { texto, deletedAt: '', updatedAt, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) });
+  } else state[key].push({ id: uid(), texto, sortOrder: nextMateoOrder(key), updatedAt, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) });
   save();
   closeModal('modal-mateo-list');
   renderMateo();
@@ -4041,9 +4149,12 @@ function saveMateoListItem() {
 }
 function addMateoMerienda() {
   const fecha = document.getElementById('mateo-merienda-fecha').value;
+  const updatedAt = new Date().toISOString();
   if (!fecha) return toast('Elegí una fecha.');
   forgetDeleted('deletedMateoMeriendas', fecha);
-  if (!state.mateoMeriendas.some(item => item.fecha === fecha)) state.mateoMeriendas.push({ id: uid(), fecha, texto: 'Merienda Mateo' });
+  const item = state.mateoMeriendas.find(item => item.fecha === fecha);
+  if (item) Object.assign(item, { texto: item.texto || 'Merienda Mateo', deletedAt: '', updatedAt });
+  else state.mateoMeriendas.push({ id: uid(), fecha, texto: 'Merienda Mateo', sortOrder: nextMateoOrder('mateoMeriendas'), updatedAt });
   state.mateoMeriendas.sort((a, b) => a.fecha.localeCompare(b.fecha));
   save();
   renderMateo();
@@ -4054,19 +4165,20 @@ function renderMateoMeriendas() {
   const input = document.getElementById('mateo-merienda-fecha');
   if (input && !input.value) input.value = today();
   if (!body) return;
-  body.innerHTML = state.mateoMeriendas.length ? state.mateoMeriendas.map(item => `<tr>
+  const rows = orderedMateoItems('mateoMeriendas');
+  body.innerHTML = rows.length ? rows.map(item => `<tr draggable="true" ondragstart="startRowDrag(event,'mateoMeriendas','${item.id}')" ondragover="rowDragOver(event,'mateoMeriendas')" ondragleave="rowDragLeave(event)" ondragend="clearRowDrag()" ondrop="dropMateoRow(event,'mateoMeriendas','${item.id}')">
+    ${dragHandleMarkup()}
     <td><div class="compact-row"><span>${dateFmt(item.fecha)}</span></div></td><td><div class="compact-row"><strong>${esc(item.texto || 'Merienda Mateo')}</strong></div></td>
     <td class="right"><button class="btn sm danger" onclick="deleteMateoMerienda('${item.id}')">Eliminar</button></td>
-  </tr>`).join('') : '<tr><td colspan="3"><div class="empty">Sin meriendas agendadas.</div></td></tr>';
+  </tr>`).join('') : '<tr><td colspan="4"><div class="empty">Sin meriendas agendadas.</div></td></tr>';
 }
 function deleteMateoMerienda(id) {
   const item = state.mateoMeriendas.find(item => item.id === id);
+  const updatedAt = new Date().toISOString();
   if (item) rememberDeleted('deletedMateoMeriendas', deletionKeyFor('mateoMeriendas', item));
   rememberDeleted('deletedMateoMeriendaIds', id);
-  state.mateoMeriendas = state.mateoMeriendas.filter(item => item.id !== id);
-  applyDeleteMarkers();
+  if (item) Object.assign(item, { deletedAt: updatedAt, updatedAt });
   save();
-  applyDeleteMarkers();
   renderMateo();
   toast('Merienda eliminada');
 }
@@ -5040,7 +5152,7 @@ async function signOutCloud() {
   renderCloud();
 }
 function normalizeFinanceState(data) {
-  return {
+  const normalized = {
     cuentas: Array.isArray(data?.cuentas) ? data.cuentas : [],
     movimientos: Array.isArray(data?.movimientos) ? data.movimientos : [],
     presupuestos: Array.isArray(data?.presupuestos) ? data.presupuestos : [],
@@ -5081,13 +5193,13 @@ function mergeFinanceStates(localData, cloudData) {
       .map(i => ({ ...i })),
     shoppingCategories: unique(local.shoppingCategories.concat(cloud.shoppingCategories)).filter(c => !deleted.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', c))),
     mateoData: local.mateoData
-      .filter(i => !deleted.deletedMateoData.includes(deletionKeyFor('mateoData', i)) && !deleted.deletedMateoDataIds.includes(i.id))
+      .filter(i => isDeletedItem(i) || (!deleted.deletedMateoData.includes(deletionKeyFor('mateoData', i)) && !deleted.deletedMateoDataIds.includes(i.id)))
       .map(i => ({ ...i })),
     mateoDataInitialized: local.mateoDataInitialized || cloud.mateoDataInitialized,
-    mateoMedicamentos: local.mateoMedicamentos.filter(i => !deleted.deletedMateoMedicamentos.includes(deletionKeyFor('mateoMedicamentos', i))).map(i => ({ ...i })),
-    mateoMedicos: local.mateoMedicos.filter(i => !deleted.deletedMateoMedicos.includes(deletionKeyFor('mateoMedicos', i))).map(i => ({ ...i })),
-    mateoRegalos: local.mateoRegalos.filter(i => !deleted.deletedMateoRegalos.includes(deletionKeyFor('mateoRegalos', i))).map(i => ({ ...i })),
-    mateoMeriendas: local.mateoMeriendas.filter(i => !deleted.deletedMateoMeriendas.includes(deletionKeyFor('mateoMeriendas', i))).map(i => ({ ...i })),
+    mateoMedicamentos: local.mateoMedicamentos.filter(i => isDeletedItem(i) || !deleted.deletedMateoMedicamentos.includes(deletionKeyFor('mateoMedicamentos', i))).map(i => ({ ...i })),
+    mateoMedicos: local.mateoMedicos.filter(i => isDeletedItem(i) || !deleted.deletedMateoMedicos.includes(deletionKeyFor('mateoMedicos', i))).map(i => ({ ...i })),
+    mateoRegalos: local.mateoRegalos.filter(i => isDeletedItem(i) || !deleted.deletedMateoRegalos.includes(deletionKeyFor('mateoRegalos', i))).map(i => ({ ...i })),
+    mateoMeriendas: local.mateoMeriendas.filter(i => isDeletedItem(i) || !deleted.deletedMateoMeriendas.includes(deletionKeyFor('mateoMeriendas', i))).map(i => ({ ...i })),
     deletedMovimientos: [...new Set([...local.deletedMovimientos, ...cloud.deletedMovimientos])],
     deletedCuentas: [...new Set([...local.deletedCuentas, ...cloud.deletedCuentas])],
     ...deleted
@@ -5109,11 +5221,11 @@ function mergeFinanceStates(localData, cloudData) {
   mergeByIdOrKey(merged.appUsers, cloud.appUsers, u => normalizeUsername(u.username));
   mergeByIdOrKey(merged.menuDays, cloud.menuDays.filter(d => !merged.deletedMenuDays.includes(deletionKeyFor('menuDays', d))), d => d.fecha);
   mergeByIdOrKey(merged.shoppingItems, cloud.shoppingItems.filter(i => !merged.deletedShoppingItems.includes(deletionKeyFor('shoppingItems', i)) && !merged.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', i.categoria))), i => `${normalizeKey(i.categoria)}|${normalizeKey(i.item)}`);
-  mergeByIdOrKey(merged.mateoData, cloud.mateoData.filter(i => !merged.deletedMateoData.includes(deletionKeyFor('mateoData', i)) && !merged.deletedMateoDataIds.includes(i.id)), i => normalizeKey(i.nombre));
-  mergeByIdOrKey(merged.mateoMedicamentos, cloud.mateoMedicamentos.filter(i => !merged.deletedMateoMedicamentos.includes(deletionKeyFor('mateoMedicamentos', i))), i => normalizeKey(i.texto));
-  mergeByIdOrKey(merged.mateoMedicos, cloud.mateoMedicos.filter(i => !merged.deletedMateoMedicos.includes(deletionKeyFor('mateoMedicos', i))), i => normalizeKey(i.texto));
-  mergeByIdOrKey(merged.mateoRegalos, cloud.mateoRegalos.filter(i => !merged.deletedMateoRegalos.includes(deletionKeyFor('mateoRegalos', i))), i => normalizeKey(i.texto));
-  mergeByIdOrKey(merged.mateoMeriendas, cloud.mateoMeriendas.filter(i => !merged.deletedMateoMeriendas.includes(deletionKeyFor('mateoMeriendas', i))), i => i.fecha);
+  mergeByIdOrKey(merged.mateoData, cloud.mateoData.filter(i => isDeletedItem(i) || (!merged.deletedMateoData.includes(deletionKeyFor('mateoData', i)) && !merged.deletedMateoDataIds.includes(i.id))), i => normalizeKey(i.nombre));
+  mergeByIdOrKey(merged.mateoMedicamentos, cloud.mateoMedicamentos.filter(i => isDeletedItem(i) || !merged.deletedMateoMedicamentos.includes(deletionKeyFor('mateoMedicamentos', i))), i => normalizeKey(i.texto));
+  mergeByIdOrKey(merged.mateoMedicos, cloud.mateoMedicos.filter(i => isDeletedItem(i) || !merged.deletedMateoMedicos.includes(deletionKeyFor('mateoMedicos', i))), i => normalizeKey(i.texto));
+  mergeByIdOrKey(merged.mateoRegalos, cloud.mateoRegalos.filter(i => isDeletedItem(i) || !merged.deletedMateoRegalos.includes(deletionKeyFor('mateoRegalos', i))), i => normalizeKey(i.texto));
+  mergeByIdOrKey(merged.mateoMeriendas, cloud.mateoMeriendas.filter(i => isDeletedItem(i) || !merged.deletedMateoMeriendas.includes(deletionKeyFor('mateoMeriendas', i))), i => i.fecha);
   merged.shoppingCategories = unique(merged.shoppingCategories.concat(merged.shoppingItems.map(i => i.categoria))).filter(c => !merged.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', c)));
   return applyDeleteMarkers(merged);
 }
