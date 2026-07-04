@@ -422,7 +422,6 @@
       <button data-icon="L" data-nav-scope="menu" data-menu-btn="lugares" onclick="showMenuView('lugares')">Lista de compras</button>
       <button data-icon="T" data-nav-scope="menu" data-menu-btn="categorias" onclick="showMenuView('categorias')">Categorías compras</button>
       <div class="nav-label" data-nav-scope="mateo">Mateo</div>
-      <button data-icon="P" data-nav-scope="mateo" data-mateo-btn="home" onclick="showMateoView('home')">Principal</button>
       <button data-icon="D" data-nav-scope="mateo" data-mateo-btn="datos" onclick="showMateoView('datos')">Datos</button>
       <button data-icon="M" data-nav-scope="mateo" data-mateo-btn="medicamentos" onclick="showMateoView('medicamentos')">Medicamentos</button>
       <button data-icon="A" data-nav-scope="mateo" data-mateo-btn="medicos" onclick="showMateoView('medicos')">Agenda médicos</button>
@@ -524,9 +523,6 @@
         <div>
           <h2>Mateo</h2>
           <p class="muted">Datos, salud, regalos y meriendas.</p>
-        </div>
-        <div class="actions">
-          <button class="btn" onclick="showPage('home')">Principal</button>
         </div>
       </div>
       <div class="mateo-panel active" data-mateo-panel="home">
@@ -635,7 +631,6 @@
           <p class="muted">Almuerzos, cenas y lista de compras cargados desde Excel.</p>
         </div>
         <div class="actions">
-          <button class="btn" onclick="showPage('home')">Principal</button>
           <input id="menu-plan-file" class="hidden" type="file" accept=".xlsx,.xls,.csv" onchange="handlePlanFile(event)">
           <input id="shopping-file" class="hidden" type="file" accept=".xlsx,.xls,.csv" onchange="handleShoppingFile(event)">
         </div>
@@ -884,7 +879,7 @@
       <div class="page-head">
         <div>
           <h2>Nube</h2>
-          <p class="muted">Conexion con Supabase para guardar tus finanzas online.</p>
+          <p class="muted">Supabase ya queda asociado a la app para guardar tus finanzas online.</p>
         </div>
         <button class="btn" onclick="renderCloud()">Actualizar estado</button>
       </div>
@@ -892,15 +887,13 @@
         <div class="card">
           <div class="card-head"><span class="card-title">Supabase</span></div>
           <div class="card-body">
-            <div class="form-grid">
+            <div class="form-grid hidden">
               <label>Project URL<input id="cloud-url" placeholder="https://xxxxx.supabase.co"></label>
               <label>Anon public key<input id="cloud-key" placeholder="eyJhbGci..."></label>
               <label>Email para iniciar sesión<input id="cloud-email" type="email" placeholder="tu@email.com"></label>
             </div>
             <div class="actions" style="margin-top:12px;">
-              <button class="btn" onclick="saveCloudConfig()">Guardar config</button>
-              <button class="btn primary" onclick="loginWithGitHub()">Entrar con GitHub</button>
-              <button class="btn primary" onclick="sendLoginLink()">Enviar link de acceso</button>
+              <button class="btn primary" onclick="syncCloudNow()">Conectar nube</button>
               <button class="btn" onclick="signOutCloud()">Salir</button>
             </div>
             <div class="status-box" id="cloud-status">Sin configurar.</div>
@@ -2656,7 +2649,7 @@ function mergeFinanceStates(localData, cloudData) {
 }
 function scheduleCloudSync(delay = 1500) {
   if (IS_DEMO) return;
-  if (applyingCloudState || !cloudSession || !supabaseClient) return;
+  if (applyingCloudState || !currentAppToken) return;
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer = setTimeout(() => syncCloudNow(true), delay);
 }
@@ -2747,6 +2740,33 @@ async function requireCloudSession() {
   if (!cloudSession) {
     setCloudText('sync-status', 'Primero iniciá sesión con el link por email.');
     return false;
+  }
+  return true;
+}
+async function renderCloud() {
+  const config = getCloudConfig();
+  document.getElementById('cloud-url').value = config.url || '';
+  document.getElementById('cloud-key').value = config.anonKey || '';
+  await initSupabase();
+  if (!config.url || !config.anonKey) {
+    setCloudText('cloud-status', 'Supabase no esta configurado.');
+    return;
+  }
+  if (cloudSession) setCloudText('cloud-status', `Conectado a Supabase como ${cloudSession.user.email || cloudSession.user.id}`);
+  else setCloudText('cloud-status', 'Supabase asociado. La nube se conecta automaticamente al iniciar sesion.');
+}
+async function requireCloudSession() {
+  const ok = await initSupabase();
+  if (!ok) {
+    setCloudText('sync-status', 'No pude iniciar Supabase.');
+    return false;
+  }
+  if (!cloudSession) {
+    const connected = await connectCloudAutomatically();
+    if (!connected || !cloudSession) {
+      setCloudText('sync-status', 'No pude conectar la nube automaticamente.');
+      return false;
+    }
   }
   return true;
 }
@@ -3020,6 +3040,20 @@ async function appUsersRequest(payload, auth = true) {
     throw err;
   }
   return data;
+}
+async function financeStateRequest(action, data = null) {
+  if (!currentAppToken) throw new Error('Inicia sesion para usar la nube.');
+  const res = await fetch('/.netlify/functions/finance-state', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentAppToken}`
+    },
+    body: JSON.stringify({ action, data })
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || 'Error de nube.');
+  return body;
 }
 function clearAppSession() {
   currentAppUser = null;
@@ -5056,6 +5090,47 @@ async function initSupabase() {
   updateAuthUI();
   return true;
 }
+function isEmailLogin(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+}
+async function connectCloudAutomatically(credentials = null) {
+  if (IS_DEMO) return true;
+  await initSupabase();
+  if (!supabaseClient) {
+    setCloudText('cloud-status', 'No pude iniciar Supabase.');
+    setCloudText('auth-status', 'No pude iniciar Supabase.');
+    return false;
+  }
+  const { data: current } = await supabaseClient.auth.getSession();
+  if (current?.session) {
+    cloudSession = current.session;
+    scheduleCloudSync(800);
+    if (document.getElementById('page-nube')?.classList.contains('active')) renderCloud();
+    return true;
+  }
+  const email = normalizeUsername(credentials?.email || document.getElementById('auth-email')?.value || '');
+  const password = credentials?.password || document.getElementById('auth-password')?.value || '';
+  if (isEmailLogin(email) && password) {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (!error && data.session) {
+      cloudSession = data.session;
+      scheduleCloudSync(800);
+      if (document.getElementById('page-nube')?.classList.contains('active')) renderCloud();
+      return true;
+    }
+  }
+  if (supabaseClient.auth.signInAnonymously) {
+    const { data, error } = await supabaseClient.auth.signInAnonymously();
+    if (!error && data.session) {
+      cloudSession = data.session;
+      scheduleCloudSync(800);
+      if (document.getElementById('page-nube')?.classList.contains('active')) renderCloud();
+      return true;
+    }
+  }
+  setCloudText('cloud-status', 'No pude conectar la nube automaticamente.');
+  return false;
+}
 async function sendLoginLink() {
   const urlInput = document.getElementById('cloud-url')?.value.trim();
   const keyInput = document.getElementById('cloud-key')?.value.trim();
@@ -5116,6 +5191,7 @@ async function loginWithPassword() {
       state.appUsers = mergeAppUsers(state.appUsers, data.user);
       save();
       updateAuthUI();
+      setCloudText('cloud-status', `Nube asociada a ${data.user.username}.`);
       scheduleCloudSync(800);
       return;
     }
@@ -5127,6 +5203,7 @@ async function loginWithPassword() {
   if (!user) return setCloudText('auth-status', 'Usuario o contraseña incorrectos.');
   storeAppSession(user, null, remember);
   updateAuthUI();
+  setCloudText('cloud-status', `Nube asociada a ${user.username}.`);
   scheduleCloudSync(800);
 }
 async function loginWithGitHub() {
@@ -5229,17 +5306,45 @@ function mergeFinanceStates(localData, cloudData) {
   merged.shoppingCategories = unique(merged.shoppingCategories.concat(merged.shoppingItems.map(i => i.categoria))).filter(c => !merged.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', c)));
   return applyDeleteMarkers(merged);
 }
+async function syncCloudNow(silent = false) {
+  if (IS_DEMO || cloudSyncing) return;
+  if (!currentAppToken) {
+    setCloudText('sync-status', 'Inicia sesion para sincronizar.');
+    return;
+  }
+  cloudSyncing = true;
+  if (!silent) setCloudText('sync-status', 'Sincronizando...');
+  try {
+    ensureStateShape({ mergeStoredUsers: false });
+    const result = await financeStateRequest('sync', state);
+    const merged = result.state?.data ? mergeFinanceStates(state, result.state.data) : normalizeFinanceState(state);
+    applyingCloudState = true;
+    state = merged;
+    save();
+    applyingCloudState = false;
+    refreshAll();
+    await financeStateRequest('sync', state);
+    setCloudText('sync-status', 'Sincronizado con la nube familiar.');
+    setCloudText('cloud-status', 'Nube familiar asociada.');
+    if (!silent) toast('Datos sincronizados');
+  } catch (err) {
+    applyingCloudState = false;
+    setCloudText('sync-status', 'Error al sincronizar: ' + err.message);
+  } finally {
+    cloudSyncing = false;
+  }
+}
 async function downloadFromCloud() {
-  if (!(await requireCloudSession())) return;
+  if (!currentAppToken) return setCloudText('sync-status', 'Inicia sesion para bajar datos.');
   setCloudText('sync-status', 'Bajando datos...');
-  const { data, error } = await supabaseClient.from('finance_states').select('data, updated_at').eq('user_id', cloudSession.user.id).single();
-  if (error) return setCloudText('sync-status', 'No encontre datos en Supabase para este usuario.');
+  const result = await financeStateRequest('download');
+  if (!result.state?.data) return setCloudText('sync-status', 'No encontre datos en la nube familiar.');
   if (!confirm('Esto reemplaza los datos locales con lo guardado en Supabase. Continuar?')) return;
-  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], deletedCuentas: [], categories: [], aiRules: [], appUsers: [], menuDays: [], shoppingItems: [], shoppingCategories: [], mateoData: [], mateoDataInitialized: false, mateoMedicamentos: [], mateoMedicos: [], mateoRegalos: [], mateoMeriendas: [], ...(data.data || {}) };
+  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], deletedCuentas: [], categories: [], aiRules: [], appUsers: [], menuDays: [], shoppingItems: [], shoppingCategories: [], mateoData: [], mateoDataInitialized: false, mateoMedicamentos: [], mateoMedicos: [], mateoRegalos: [], mateoMeriendas: [], ...(result.state.data || {}) };
   ensureStateShape();
   save();
   refreshAll();
-  setCloudText('sync-status', `Datos descargados. Ultima nube: ${new Date(data.updated_at).toLocaleString('es-UY')}`);
+  setCloudText('sync-status', `Datos descargados. Ultima nube: ${new Date(result.state.updated_at).toLocaleString('es-UY')}`);
 }
 function refreshAll() {
   renderSidebar();
