@@ -1261,7 +1261,19 @@ function createDemoState() {
     ['2026-05-06','gasto','Gastos casa','Alquiler mayo',30500,'demo-banco'],
     ['2026-05-09','gasto','Servicios','UTE, OSE, Antel',8350,'demo-banco'],
     ['2026-05-14','gasto','Supermercado','Supermercado',9800,'demo-tarjeta'],
-    ['2026-05-18','gasto','Salud','Consulta medica',3200,'demo-banco']
+    ['2026-05-18','gasto','Salud','Consulta medica',3200,'demo-banco'],
+    ['2026-06-02','ingreso','Sueldo','Sueldo mensual',91000,'demo-banco'],
+    ['2026-06-05','gasto','Gastos casa','Alquiler junio',30500,'demo-banco'],
+    ['2026-06-08','gasto','Servicios','UTE y fibra',7900,'demo-banco'],
+    ['2026-06-11','gasto','Supermercado','Compra grande',12800,'demo-tarjeta'],
+    ['2026-06-16','gasto','Transporte','Nafta',5600,'demo-tarjeta'],
+    ['2026-06-22','gasto','Ocio','Cumple familiar',7200,'demo-efectivo'],
+    ['2026-07-02','ingreso','Sueldo','Sueldo mensual',93500,'demo-banco'],
+    ['2026-07-04','ingreso','Extra','Venta usada',8500,'demo-banco'],
+    ['2026-07-05','gasto','Gastos casa','Alquiler julio',31500,'demo-banco'],
+    ['2026-07-07','gasto','Servicios','Servicios hogar',8600,'demo-banco'],
+    ['2026-07-09','gasto','Supermercado','Reposicion semanal',7600,'demo-tarjeta'],
+    ['2026-07-12','gasto','Salud','Pediatra',4200,'demo-banco']
   ];
   const movimientos = base.map((m, i) => ({
     id: `demo-mov-${i + 1}`,
@@ -1294,7 +1306,52 @@ function createDemoState() {
     { id: 'demo-shop-2', categoria: 'Verdulería', item: 'Lechuga y tomate', cantidad: '', notas: '' }
   ];
   const shoppingCategories = ['Supermercado', 'Verdulería', 'Carnicería'];
-  return { cuentas, movimientos, presupuestos, deletedMovimientos: [], deletedCuentas: [], categories, aiRules: [], menuDays, shoppingItems, shoppingCategories };
+  menuDays.push(
+    { id: 'demo-menu-3', fecha: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10), almuerzo: 'Arroz con pollo', cena: 'Sopa de verduras' },
+    { id: 'demo-menu-4', fecha: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10), almuerzo: 'Tortilla con ensalada', cena: 'Hamburguesas caseras' },
+    { id: 'demo-menu-5', fecha: new Date(Date.now() + 4 * 86400000).toISOString().slice(0, 10), almuerzo: 'Noquis con tuco', cena: 'Omelette y ensalada' },
+    { id: 'demo-menu-6', fecha: new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10), almuerzo: 'Pescado al horno', cena: 'Empanadas' }
+  );
+  shoppingItems.push(
+    { id: 'demo-shop-3', categoria: 'Supermercado', item: 'Arroz', cantidad: '1 kg', notas: 'Para guarniciones' },
+    { id: 'demo-shop-4', categoria: 'Supermercado', item: 'Leche', cantidad: '2 litros', notas: '' },
+    { id: 'demo-shop-5', categoria: 'Verduleria', item: 'Zanahoria', cantidad: '1 kg', notas: 'Para sopa' },
+    { id: 'demo-shop-6', categoria: 'Verduleria', item: 'Manzanas', cantidad: '6', notas: '' },
+    { id: 'demo-shop-7', categoria: 'Carniceria', item: 'Milanesas', cantidad: '1.5 kg', notas: '' },
+    { id: 'demo-shop-8', categoria: 'Carniceria', item: 'Carne picada', cantidad: '1 kg', notas: 'Hamburguesas' },
+    { id: 'demo-shop-9', categoria: 'Farmacia', item: 'Protector solar', cantidad: '1', notas: 'Factor 50' },
+    { id: 'demo-shop-10', categoria: 'Farmacia', item: 'Ibuprofeno ninos', cantidad: '1', notas: 'Revisar vencimiento' }
+  );
+  shoppingCategories.push('Farmacia');
+  const mateoData = [
+    { id: 'demo-mateo-data-1', nombre: 'Altura', valor: '104 cm' },
+    { id: 'demo-mateo-data-2', nombre: 'Peso', valor: '17.8 kg' },
+    { id: 'demo-mateo-data-3', nombre: 'Talle de calzado', valor: '28' },
+    { id: 'demo-mateo-data-4', nombre: 'Talle de buzo', valor: '5/6' },
+    { id: 'demo-mateo-data-5', nombre: 'Talle pantalon', valor: '5' }
+  ];
+  const mateoMedicamentos = [
+    { id: 'demo-med-1', texto: 'Vitamina D - 5 gotas despues del desayuno' },
+    { id: 'demo-med-2', texto: 'Salbutamol - solo si indica el pediatra' },
+    { id: 'demo-med-3', texto: 'Antialergico - revisar dosis por peso' }
+  ];
+  const mateoMedicos = [
+    { id: 'demo-doc-1', texto: 'Control pediatra', fecha: '2026-07-18', mesAgenda: '' },
+    { id: 'demo-doc-2', texto: 'Odontologo', fecha: '', mesAgenda: '2026-08' },
+    { id: 'demo-doc-3', texto: 'Oftalmologo', fecha: '', mesAgenda: '2026-09' }
+  ];
+  const mateoRegalos = [
+    { id: 'demo-gift-1', texto: 'Bloques magneticos' },
+    { id: 'demo-gift-2', texto: 'Libro de dinosaurios' },
+    { id: 'demo-gift-3', texto: 'Pijama de invierno' }
+  ];
+  const mateoMeriendas = [
+    { id: 'demo-snack-1', fecha: today(), texto: 'Yogur con banana' },
+    { id: 'demo-snack-2', fecha: new Date(Date.now() + 86400000).toISOString().slice(0, 10), texto: 'Sandwich de queso y fruta' },
+    { id: 'demo-snack-3', fecha: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10), texto: 'Galletas caseras y leche' },
+    { id: 'demo-snack-4', fecha: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10), texto: 'Muffin de avena' }
+  ];
+  return { cuentas, movimientos, presupuestos, deletedMovimientos: [], deletedCuentas: [], categories, aiRules: [], menuDays, shoppingItems, shoppingCategories, mateoData, mateoDataInitialized: true, mateoMedicamentos, mateoMedicos, mateoRegalos, mateoMeriendas };
 }
 
 function unique(values) {
