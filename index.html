@@ -428,7 +428,7 @@
     </div>
     <div class="home-quick-actions hidden" data-quick-actions="mateo">
       <button class="btn primary" onclick="openMateoListModal('regalos')">+ Regalo</button>
-      <button class="btn" onclick="openMateoListModal('medicos')">+ Agenda</button>
+      <button class="btn" onclick="openMateoListModal('medicos')">+ Médico</button>
       <button class="btn" onclick="openMateoListModal('medicamentos')">+ Medicamento</button>
     </div>
     <div class="app-toolbar">
@@ -1234,6 +1234,7 @@ let currentSummaryDetail = null;
 let currentMenuView = 'home';
 let currentMateoView = 'home';
 let appHistory = [];
+let nativeBackArmed = false;
 
 function createDemoState() {
   const cuentas = [
@@ -1373,6 +1374,45 @@ function createDemoState() {
 
 function unique(values) {
   return [...new Set(values.map(v => String(v || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+}
+const DELETE_MARKERS = [
+  'deletedCategories',
+  'deletedMenuDays',
+  'deletedShoppingItems',
+  'deletedShoppingCategories',
+  'deletedMateoData',
+  'deletedMateoMedicamentos',
+  'deletedMateoMedicos',
+  'deletedMateoRegalos',
+  'deletedMateoMeriendas'
+];
+function deletionKeyFor(collection, item) {
+  if (collection === 'categories') return `${normalizeKey(item?.tipo)}|${normalizeKey(item?.nombre)}`;
+  if (collection === 'menuDays') return String(item?.fecha || '').trim();
+  if (collection === 'shoppingItems') return `${normalizeKey(item?.categoria)}|${normalizeKey(item?.item)}`;
+  if (collection === 'shoppingCategories') return normalizeKey(item);
+  if (collection === 'mateoData') return normalizeKey(item?.nombre);
+  if (['mateoMedicamentos', 'mateoMedicos', 'mateoRegalos'].includes(collection)) return normalizeKey(item?.texto);
+  if (collection === 'mateoMeriendas') return String(item?.fecha || '').trim();
+  return '';
+}
+function ensureDeleteMarkers(target = state) {
+  DELETE_MARKERS.forEach(key => { if (!Array.isArray(target[key])) target[key] = []; });
+}
+function rememberDeleted(marker, value) {
+  ensureDeleteMarkers();
+  const key = String(value || '').trim();
+  if (key && !state[marker].includes(key)) state[marker].push(key);
+}
+function forgetDeleted(marker, value) {
+  ensureDeleteMarkers();
+  const key = String(value || '').trim();
+  if (key) state[marker] = state[marker].filter(item => item !== key);
+}
+function mergeDeleteMarkers(local, cloud, merged) {
+  DELETE_MARKERS.forEach(key => {
+    merged[key] = [...new Set([...(local[key] || []), ...(cloud[key] || [])])];
+  });
 }
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -2677,6 +2717,7 @@ function ensureStateShape(options = {}) {
   if (!Array.isArray(state.presupuestos)) state.presupuestos = [];
   if (!Array.isArray(state.deletedMovimientos)) state.deletedMovimientos = [];
   if (!Array.isArray(state.deletedCuentas)) state.deletedCuentas = [];
+  ensureDeleteMarkers();
   if (!Array.isArray(state.categories)) state.categories = [];
   if (!Array.isArray(state.aiRules)) state.aiRules = [];
   if (!Array.isArray(state.appUsers)) state.appUsers = [];
@@ -2940,6 +2981,18 @@ function updateBackButton() {
   const btn = document.getElementById('app-back-btn');
   if (btn) btn.disabled = !appHistory.length;
 }
+function shouldHandleNativeBack() {
+  return navigationKey(currentNavigationSnapshot()) !== 'home';
+}
+function armNativeBack() {
+  if (!window.history?.pushState || !shouldHandleNativeBack()) {
+    nativeBackArmed = false;
+    return;
+  }
+  if (nativeBackArmed && history.state?.finanzasCasaBack) return;
+  history.pushState({ ...(history.state || {}), finanzasCasaBack: true }, '', location.href);
+  nativeBackArmed = true;
+}
 function updateQuickActions(pageId = document.querySelector('.page.active')?.id.replace('page-', '') || 'home') {
   document.querySelectorAll('[data-quick-actions]').forEach(group => {
     group.classList.toggle('hidden', group.dataset.quickActions !== (pageId === 'mateo' ? 'mateo' : 'main'));
@@ -2979,7 +3032,15 @@ function showPage(id, options = {}) {
   if (window.matchMedia('(max-width: 900px)').matches) setSidebarCollapsed(true, false);
   updateQuickActions(id);
   updateBackButton();
+  armNativeBack();
 }
+window.addEventListener('popstate', () => {
+  nativeBackArmed = false;
+  if (!shouldHandleNativeBack()) return;
+  if (appHistory.length) goBackInApp();
+  else showPage('home', { record: false });
+  armNativeBack();
+});
 function setSidebarCollapsed(collapsed, remember = true) {
   const shell = document.getElementById('app-shell');
   if (!shell) return;
@@ -3282,6 +3343,7 @@ function guardarCategoria() {
   if (!nombre) return toast('Ingresá un nombre de categoría.');
   const duplicate = state.categories.find(c => c.id !== editingCategoriaId && c.tipo === tipo && normalizeKey(c.nombre) === normalizeKey(nombre));
   if (duplicate) return toast('Esa categoría ya existe.');
+  forgetDeleted('deletedCategories', deletionKeyFor('categories', { tipo, nombre }));
   if (editingCategoriaId) {
     const cat = state.categories.find(c => c.id === editingCategoriaId);
     const oldName = cat.nombre;
@@ -3300,6 +3362,7 @@ function eliminarCategoria() {
   if (!cat) return;
   const used = state.movimientos.some(m => m.categoria === cat.nombre) || state.presupuestos.some(p => p.categoria === cat.nombre);
   if (used && !confirm('Esta categoría tiene movimientos o presupuestos. Si la eliminás, esos registros quedan con la categoría guardada pero ya no aparecerá como opción. ¿Continuar?')) return;
+  rememberDeleted('deletedCategories', deletionKeyFor('categories', cat));
   state.categories = state.categories.filter(c => c.id !== editingCategoriaId);
   save();
   closeModal('modal-categoria');
@@ -3538,6 +3601,8 @@ function createShoppingItem({ item, cantidad = '', categoria = 'Sin categoría',
   item = String(item || '').trim();
   categoria = String(categoria || '').trim() || 'Sin categoría';
   if (!item) return false;
+  forgetDeleted('deletedShoppingItems', deletionKeyFor('shoppingItems', { categoria, item }));
+  forgetDeleted('deletedShoppingCategories', deletionKeyFor('shoppingCategories', categoria));
   state.shoppingCategories = unique(state.shoppingCategories.concat(categoria));
   state.shoppingItems.push({ id: uid(), categoria, item, cantidad: String(cantidad || '').trim(), notas: String(notas || '').trim(), compradoAt: '' });
   save();
@@ -3551,6 +3616,8 @@ function saveShoppingItemFromModal() {
   const categoria = String(document.getElementById('shop-modal-category')?.value || '').trim() || 'Sin categoría';
   const notas = String(document.getElementById('shop-modal-notes')?.value || '').trim();
   if (!item) return toast('Ingresá un producto.');
+  forgetDeleted('deletedShoppingItems', deletionKeyFor('shoppingItems', { categoria, item }));
+  forgetDeleted('deletedShoppingCategories', deletionKeyFor('shoppingCategories', categoria));
   if (id) {
     const row = state.shoppingItems.find(i => i.id === id);
     if (row) Object.assign(row, { item, cantidad, categoria, notas });
@@ -3567,6 +3634,7 @@ function createShoppingCategory(value) {
   value = String(value || '').trim();
   if (!value) return false;
   if (state.shoppingCategories.some(c => normalizeKey(c) === normalizeKey(value))) return 'duplicate';
+  forgetDeleted('deletedShoppingCategories', deletionKeyFor('shoppingCategories', value));
   state.shoppingCategories.push(value);
   state.shoppingCategories = unique(state.shoppingCategories);
   save();
@@ -3593,6 +3661,7 @@ function addShoppingCategory() {
 function deleteShoppingCategory(category) {
   category = decodeURIComponent(category);
   if (state.shoppingItems.some(i => normalizeKey(i.categoria) === normalizeKey(category))) return toast('Primero eliminá o cambiá las compras de esa categoría.');
+  rememberDeleted('deletedShoppingCategories', deletionKeyFor('shoppingCategories', category));
   state.shoppingCategories = state.shoppingCategories.filter(c => normalizeKey(c) !== normalizeKey(category));
   save();
   renderMenu();
@@ -3608,6 +3677,8 @@ function addShoppingItem() {
   toast('Compra agregada');
 }
 function deleteShoppingItem(id) {
+  const item = state.shoppingItems.find(item => item.id === id);
+  if (item) rememberDeleted('deletedShoppingItems', deletionKeyFor('shoppingItems', item));
   state.shoppingItems = state.shoppingItems.filter(item => item.id !== id);
   save();
   renderMenu();
@@ -3677,6 +3748,7 @@ function saveMealFromModal() {
   const cena = document.getElementById('meal-cena').value.trim();
   if (!fecha) return toast('Elegí una fecha.');
   if (!almuerzo && !cena) return toast('Agregá almuerzo o cena.');
+  forgetDeleted('deletedMenuDays', fecha);
   state.menuDays = state.menuDays.filter(day => day.fecha !== oldFecha && day.fecha !== fecha);
   state.menuDays.push({ id: `menu-${fecha}`, fecha, almuerzo, cena });
   state.menuDays.sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -3686,6 +3758,7 @@ function saveMealFromModal() {
   toast(oldFecha ? 'Comida actualizada' : 'Comida agregada');
 }
 function deleteMeal(fecha) {
+  rememberDeleted('deletedMenuDays', fecha);
   state.menuDays = state.menuDays.filter(day => day.fecha !== fecha);
   save();
   renderMenu();
@@ -3768,6 +3841,7 @@ function saveMateoData() {
   const nombre = document.getElementById('mateo-data-name').value.trim();
   const valor = document.getElementById('mateo-data-value').value.trim();
   if (!nombre) return toast('Ingresá una categoría.');
+  forgetDeleted('deletedMateoData', deletionKeyFor('mateoData', { nombre }));
   if (id) {
     const item = state.mateoData.find(row => row.id === id);
     if (item) Object.assign(item, { nombre, valor });
@@ -3778,6 +3852,8 @@ function saveMateoData() {
   toast('Dato guardado');
 }
 function deleteMateoData(id) {
+  const item = state.mateoData.find(item => item.id === id);
+  if (item) rememberDeleted('deletedMateoData', deletionKeyFor('mateoData', item));
   state.mateoData = state.mateoData.filter(item => item.id !== id);
   save();
   renderMateo();
@@ -3813,6 +3889,9 @@ function saveMateoListItem() {
 }
 function deleteMateoListItem(kind, id) {
   const key = mateoListKey(kind);
+  const marker = { medicamentos: 'deletedMateoMedicamentos', medicos: 'deletedMateoMedicos', regalos: 'deletedMateoRegalos' }[kind];
+  const item = state[key].find(item => item.id === id);
+  if (marker && item) rememberDeleted(marker, deletionKeyFor(key, item));
   state[key] = state[key].filter(item => item.id !== id);
   save();
   renderMateo();
@@ -3884,7 +3963,9 @@ function saveMateoListItem() {
   const fecha = document.getElementById('mateo-list-date').value;
   const mesAgenda = document.getElementById('mateo-list-month').value;
   const key = mateoListKey(kind);
+  const marker = { medicamentos: 'deletedMateoMedicamentos', medicos: 'deletedMateoMedicos', regalos: 'deletedMateoRegalos' }[kind];
   if (!texto) return toast('Ingresá un detalle.');
+  if (marker) forgetDeleted(marker, deletionKeyFor(key, { texto }));
   if (id) {
     const item = state[key].find(row => row.id === id);
     if (item) Object.assign(item, { texto, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) });
@@ -3897,6 +3978,7 @@ function saveMateoListItem() {
 function addMateoMerienda() {
   const fecha = document.getElementById('mateo-merienda-fecha').value;
   if (!fecha) return toast('Elegí una fecha.');
+  forgetDeleted('deletedMateoMeriendas', fecha);
   if (!state.mateoMeriendas.some(item => item.fecha === fecha)) state.mateoMeriendas.push({ id: uid(), fecha, texto: 'Merienda Mateo' });
   state.mateoMeriendas.sort((a, b) => a.fecha.localeCompare(b.fecha));
   save();
@@ -3914,6 +3996,8 @@ function renderMateoMeriendas() {
   </tr>`).join('') : '<tr><td colspan="3"><div class="empty">Sin meriendas agendadas.</div></td></tr>';
 }
 function deleteMateoMerienda(id) {
+  const item = state.mateoMeriendas.find(item => item.id === id);
+  if (item) rememberDeleted('deletedMateoMeriendas', deletionKeyFor('mateoMeriendas', item));
   state.mateoMeriendas = state.mateoMeriendas.filter(item => item.id !== id);
   save();
   renderMateo();
@@ -4019,6 +4103,7 @@ function parseShoppingRow(row) {
 function mergeMenuRows(menuRows) {
   const menuByDate = new Map(state.menuDays.map(day => [day.fecha, { ...day }]));
   menuRows.forEach(menu => {
+    forgetDeleted('deletedMenuDays', menu.fecha);
     const current = menuByDate.get(menu.fecha) || { id: menu.id || `menu-${menu.fecha}`, fecha: menu.fecha, almuerzo: '', cena: '' };
     menuByDate.set(menu.fecha, { ...current, almuerzo: menu.almuerzo || current.almuerzo, cena: menu.cena || current.cena });
   });
@@ -4026,7 +4111,11 @@ function mergeMenuRows(menuRows) {
 }
 function mergeShoppingRows(shoppingRows) {
   const shoppingByKey = new Map(state.shoppingItems.map(item => [`${normalizeKey(item.categoria)}|${normalizeKey(item.item)}`, { ...item }]));
-  shoppingRows.forEach(item => shoppingByKey.set(`${normalizeKey(item.categoria)}|${normalizeKey(item.item)}`, { ...item, compradoAt: item.compradoAt || '' }));
+  shoppingRows.forEach(item => {
+    forgetDeleted('deletedShoppingItems', deletionKeyFor('shoppingItems', item));
+    forgetDeleted('deletedShoppingCategories', deletionKeyFor('shoppingCategories', item.categoria));
+    shoppingByKey.set(`${normalizeKey(item.categoria)}|${normalizeKey(item.item)}`, { ...item, compradoAt: item.compradoAt || '' });
+  });
   state.shoppingItems = [...shoppingByKey.values()].sort((a, b) => String(a.categoria).localeCompare(String(b.categoria), 'es') || String(a.item).localeCompare(String(b.item), 'es'));
   state.shoppingCategories = unique(state.shoppingCategories.concat(state.shoppingItems.map(item => item.categoria)).filter(Boolean));
 }
@@ -4903,33 +4992,40 @@ function normalizeFinanceState(data) {
     mateoRegalos: Array.isArray(data?.mateoRegalos) ? data.mateoRegalos : [],
     mateoMeriendas: Array.isArray(data?.mateoMeriendas) ? data.mateoMeriendas : []
   };
+  DELETE_MARKERS.forEach(key => { normalized[key] = Array.isArray(data?.[key]) ? data[key] : []; });
+  return normalized;
 }
 function mergeFinanceStates(localData, cloudData) {
   const local = normalizeFinanceState(localData);
   const cloud = normalizeFinanceState(cloudData);
   const accountIdMap = {};
+  const deleted = {};
+  mergeDeleteMarkers(local, cloud, deleted);
   const merged = {
     cuentas: local.cuentas.map(c => ({ ...c })),
     movimientos: [],
     presupuestos: local.presupuestos.map(p => ({ ...p })),
-    categories: local.categories.map(c => ({ ...c })),
+    categories: local.categories.filter(c => !deleted.deletedCategories.includes(deletionKeyFor('categories', c))).map(c => ({ ...c })),
     aiRules: local.aiRules.map(r => ({ ...r })),
     appUsers: local.appUsers.map(u => ({ ...u })),
-    menuDays: local.menuDays.map(d => ({ ...d })),
-    shoppingItems: local.shoppingItems.map(i => ({ ...i })),
-    shoppingCategories: unique(local.shoppingCategories.concat(cloud.shoppingCategories)),
-    mateoData: local.mateoData.map(i => ({ ...i })),
+    menuDays: local.menuDays.filter(d => !deleted.deletedMenuDays.includes(deletionKeyFor('menuDays', d))).map(d => ({ ...d })),
+    shoppingItems: local.shoppingItems
+      .filter(i => !deleted.deletedShoppingItems.includes(deletionKeyFor('shoppingItems', i)) && !deleted.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', i.categoria)))
+      .map(i => ({ ...i })),
+    shoppingCategories: unique(local.shoppingCategories.concat(cloud.shoppingCategories)).filter(c => !deleted.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', c))),
+    mateoData: local.mateoData.filter(i => !deleted.deletedMateoData.includes(deletionKeyFor('mateoData', i))).map(i => ({ ...i })),
     mateoDataInitialized: local.mateoDataInitialized || cloud.mateoDataInitialized,
-    mateoMedicamentos: local.mateoMedicamentos.map(i => ({ ...i })),
-    mateoMedicos: local.mateoMedicos.map(i => ({ ...i })),
-    mateoRegalos: local.mateoRegalos.map(i => ({ ...i })),
-    mateoMeriendas: local.mateoMeriendas.map(i => ({ ...i })),
+    mateoMedicamentos: local.mateoMedicamentos.filter(i => !deleted.deletedMateoMedicamentos.includes(deletionKeyFor('mateoMedicamentos', i))).map(i => ({ ...i })),
+    mateoMedicos: local.mateoMedicos.filter(i => !deleted.deletedMateoMedicos.includes(deletionKeyFor('mateoMedicos', i))).map(i => ({ ...i })),
+    mateoRegalos: local.mateoRegalos.filter(i => !deleted.deletedMateoRegalos.includes(deletionKeyFor('mateoRegalos', i))).map(i => ({ ...i })),
+    mateoMeriendas: local.mateoMeriendas.filter(i => !deleted.deletedMateoMeriendas.includes(deletionKeyFor('mateoMeriendas', i))).map(i => ({ ...i })),
     deletedMovimientos: [...new Set([...local.deletedMovimientos, ...cloud.deletedMovimientos])],
-    deletedCuentas: [...new Set([...local.deletedCuentas, ...cloud.deletedCuentas])]
+    deletedCuentas: [...new Set([...local.deletedCuentas, ...cloud.deletedCuentas])],
+    ...deleted
   };
   merged.cuentas = merged.cuentas.filter(c => !merged.deletedCuentas.includes(c.id));
   mergeByIdOrKey(merged.cuentas, cloud.cuentas.filter(c => !merged.deletedCuentas.includes(c.id)), c => `${normalizeKey(c.tipo)}|${normalizeKey(c.nombre)}`, accountIdMap);
-  mergeByIdOrKey(merged.categories, cloud.categories, c => `${normalizeKey(c.tipo)}|${normalizeKey(c.nombre)}`);
+  mergeByIdOrKey(merged.categories, cloud.categories.filter(c => !merged.deletedCategories.includes(deletionKeyFor('categories', c))), c => `${normalizeKey(c.tipo)}|${normalizeKey(c.nombre)}`);
   const addMergedMovimiento = item => {
     const mov = remapMovimientoAccounts(item, accountIdMap);
     if (mov.id && merged.deletedMovimientos.includes(mov.id)) return;
@@ -4942,14 +5038,14 @@ function mergeFinanceStates(localData, cloudData) {
   mergeByIdOrKey(merged.presupuestos, cloud.presupuestos.map(p => ({ ...p, key: budgetKey(p) })), budgetKey);
   mergeByIdOrKey(merged.aiRules, cloud.aiRules, r => `${normalizeKey(r.tipo)}|${normalizeKey(r.key)}`);
   mergeByIdOrKey(merged.appUsers, cloud.appUsers, u => normalizeUsername(u.username));
-  mergeByIdOrKey(merged.menuDays, cloud.menuDays, d => d.fecha);
-  mergeByIdOrKey(merged.shoppingItems, cloud.shoppingItems, i => `${normalizeKey(i.categoria)}|${normalizeKey(i.item)}`);
-  mergeByIdOrKey(merged.mateoData, cloud.mateoData, i => normalizeKey(i.nombre));
-  mergeByIdOrKey(merged.mateoMedicamentos, cloud.mateoMedicamentos, i => normalizeKey(i.texto));
-  mergeByIdOrKey(merged.mateoMedicos, cloud.mateoMedicos, i => normalizeKey(i.texto));
-  mergeByIdOrKey(merged.mateoRegalos, cloud.mateoRegalos, i => normalizeKey(i.texto));
-  mergeByIdOrKey(merged.mateoMeriendas, cloud.mateoMeriendas, i => i.fecha);
-  merged.shoppingCategories = unique(merged.shoppingCategories.concat(merged.shoppingItems.map(i => i.categoria)));
+  mergeByIdOrKey(merged.menuDays, cloud.menuDays.filter(d => !merged.deletedMenuDays.includes(deletionKeyFor('menuDays', d))), d => d.fecha);
+  mergeByIdOrKey(merged.shoppingItems, cloud.shoppingItems.filter(i => !merged.deletedShoppingItems.includes(deletionKeyFor('shoppingItems', i)) && !merged.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', i.categoria))), i => `${normalizeKey(i.categoria)}|${normalizeKey(i.item)}`);
+  mergeByIdOrKey(merged.mateoData, cloud.mateoData.filter(i => !merged.deletedMateoData.includes(deletionKeyFor('mateoData', i))), i => normalizeKey(i.nombre));
+  mergeByIdOrKey(merged.mateoMedicamentos, cloud.mateoMedicamentos.filter(i => !merged.deletedMateoMedicamentos.includes(deletionKeyFor('mateoMedicamentos', i))), i => normalizeKey(i.texto));
+  mergeByIdOrKey(merged.mateoMedicos, cloud.mateoMedicos.filter(i => !merged.deletedMateoMedicos.includes(deletionKeyFor('mateoMedicos', i))), i => normalizeKey(i.texto));
+  mergeByIdOrKey(merged.mateoRegalos, cloud.mateoRegalos.filter(i => !merged.deletedMateoRegalos.includes(deletionKeyFor('mateoRegalos', i))), i => normalizeKey(i.texto));
+  mergeByIdOrKey(merged.mateoMeriendas, cloud.mateoMeriendas.filter(i => !merged.deletedMateoMeriendas.includes(deletionKeyFor('mateoMeriendas', i))), i => i.fecha);
+  merged.shoppingCategories = unique(merged.shoppingCategories.concat(merged.shoppingItems.map(i => i.categoria))).filter(c => !merged.deletedShoppingCategories.includes(deletionKeyFor('shoppingCategories', c)));
   return merged;
 }
 async function downloadFromCloud() {
