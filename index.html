@@ -334,12 +334,14 @@
     #page-home .home-finance-widget .card-head { align-items: center; }
     #page-home .home-finance-widget #home-balance { font-size: 14px; }
     #page-home .home-finance-widget .table-wrap { margin: 0; width: 100%; overflow: hidden; }
-    #page-home .home-finance-widget table { table-layout: fixed; width: 100%; }
-    #page-home .home-finance-widget th, #page-home .home-finance-widget td { padding: 7px 6px; min-width: 0; }
+    #page-home .home-finance-widget table { display: block; width: 100%; }
+    #page-home .home-finance-widget tbody { display: grid; gap: 7px; width: 100%; }
+    #page-home .home-finance-widget tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--surface2) 26%, transparent); }
+    #page-home .home-finance-widget th, #page-home .home-finance-widget td { display: block; border: 0; padding: 0; min-width: 0; }
     #page-home .home-finance-widget thead { display: none; }
-    #page-home .home-finance-widget th:nth-child(1), #page-home .home-finance-widget td:nth-child(1) { width: 66px; white-space: nowrap; }
-    #page-home .home-finance-widget th:nth-child(3), #page-home .home-finance-widget td:nth-child(3) { width: 88px; white-space: nowrap; }
-    #page-home .home-finance-widget td:nth-child(2) { overflow: hidden; }
+    #page-home .home-finance-widget td:nth-child(1) { grid-column: 1 / -1; color: var(--text2); font-size: 11px; line-height: 1.2; white-space: nowrap; }
+    #page-home .home-finance-widget td:nth-child(2) { grid-column: 1; overflow: hidden; }
+    #page-home .home-finance-widget td:nth-child(3) { grid-column: 2; align-self: center; white-space: nowrap; }
     #page-home .home-finance-widget .movement-info strong { font-size: 13px; }
     #page-home .home-finance-widget .movement-info span { font-size: 11px; }
     #page-home .home-finance-widget .right { text-align: right; }
