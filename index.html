@@ -230,6 +230,7 @@
   .home-widget:hover { border-color: var(--border2); background: color-mix(in srgb, var(--surface2) 24%, var(--surface)); }
   .home-widget ul { list-style: none; display: grid; gap: 8px; color: var(--text2); }
   .home-widget li { overflow-wrap: anywhere; }
+  .home-balance-value { font-weight: 800; font-size: 13px; }
   .compact-list { display: grid; gap: 8px; }
   .compact-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; background: color-mix(in srgb, var(--surface2) 32%, transparent); min-width: 0; }
   .compact-row.pending { border-color: rgba(178, 54, 54, .35); background: var(--red-bg); }
@@ -285,6 +286,7 @@
     .home-quick-actions .btn { min-height: 40px; padding: 7px 8px; font-size: 13px; line-height: 1.2; }
     h2 { font-size: 22px; }
     .page > .card, .page > .grid, .menu-panel > .card, .mateo-panel > .card { margin-bottom: 10px; }
+    .card, .home-widget, .grid { min-width: 0; max-width: 100%; }
     .card-head { padding: 9px 10px; flex-wrap: wrap; align-items: flex-start; }
     .card-body { padding: 10px; }
     .home-widgets, .module-grid, .menu-hero, .shopping-grid, .account-grid { grid-template-columns: 1fr; gap: 8px; }
@@ -313,6 +315,16 @@
     #page-home .home-meals-widget .meal-date { font-size: 11px; }
     #page-home .home-meals-widget .meal-slot { padding-top: 6px; gap: 1px; }
     #page-home .home-meals-widget .meal-slot strong { font-size: 13px; }
+    #page-home .home-finance-widget { overflow: hidden; }
+    #page-home .home-finance-widget .card-head { align-items: center; }
+    #page-home .home-finance-widget #home-balance { font-size: 14px; }
+    #page-home .home-finance-widget .table-wrap { margin: 0; width: 100%; overflow: hidden; }
+    #page-home .home-finance-widget table { table-layout: fixed; width: 100%; }
+    #page-home .home-finance-widget th, #page-home .home-finance-widget td { padding: 7px 6px; min-width: 0; }
+    #page-home .home-finance-widget th:nth-child(1), #page-home .home-finance-widget td:nth-child(1) { width: 74px; }
+    #page-home .home-finance-widget th:nth-child(3), #page-home .home-finance-widget td:nth-child(3) { width: 96px; }
+    #page-home .home-finance-widget td:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #page-home .home-finance-widget .right { text-align: right; }
     #page-menu .menu-panel[data-menu-panel="home"] .module-card { grid-template-columns: minmax(0, 1fr) auto; }
     #page-menu .menu-panel[data-menu-panel="home"] .module-card .btn { white-space: nowrap; }
     .compact-list { gap: 6px; }
@@ -3063,7 +3075,9 @@ function renderHome() {
   const todayISO = today();
   const tomorrowISO = addDaysISO(todayISO, 1);
   meals.innerHTML = renderMealCard(todayISO, 'Hoy') + renderMealCard(tomorrowISO, 'Mañana');
-  balance.textContent = money(totalBalance());
+  const homeTotal = totalBalance();
+  balance.textContent = money(homeTotal);
+  balance.className = `home-balance-value ${homeTotal >= 0 ? 'green' : 'red'}`;
   const latest = [...state.movimientos].sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || ''))).slice(0, 4);
   movements.innerHTML = latest.length ? latest.map(m => {
     const cls = m.tipo === 'ingreso' ? 'green' : m.tipo === 'gasto' ? 'red' : 'blue';
