@@ -2,6 +2,7 @@ import crypto from 'crypto';
 
 const DEFAULT_ALLOWED_ORIGIN = 'https://finanzas-hogar-263.netlify.app';
 const DEFAULT_SUPABASE_URL = 'https://mnkkearluehndvkudulc.supabase.co';
+const DEFAULT_FAMILY_EMAIL = 'familia+finanzas-casa@finanzas-hogar.app';
 
 function env(name) {
   return globalThis.Netlify?.env?.get?.(name) || process.env[name] || '';
@@ -67,15 +68,6 @@ function requireAppSession(request) {
   return session;
 }
 
-function stableFamilyId() {
-  const source = 'finanzas-casa:familia-compartida';
-  const bytes = crypto.createHash('sha256').update(source).digest();
-  bytes[6] = (bytes[6] & 0x0f) | 0x50;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = bytes.subarray(0, 16).toString('hex');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
-}
-
 function supabaseConfig() {
   const url = (env('SUPABASE_URL') || env('VITE_SUPABASE_URL') || DEFAULT_SUPABASE_URL).replace(/\/$/, '');
   const key = env('SUPABASE_SERVICE_ROLE_KEY') || env('SUPABASE_SECRET_KEY') || env('SUPABASE_SERVICE_KEY');
@@ -85,6 +77,66 @@ function supabaseConfig() {
     throw err;
   }
   return { url, key };
+}
+
+function familyEmail() {
+  return (env('FAMILY_SYNC_EMAIL') || DEFAULT_FAMILY_EMAIL).trim().toLowerCase();
+}
+
+function familyPassword() {
+  return crypto.createHash('sha256').update(`${authSecret()}:familia-compartida`).digest('base64url').slice(0, 32);
+}
+
+async function listAuthUsers(url, key) {
+  const res = await fetch(`${url}/auth/v1/admin/users?per_page=100&page=1`, {
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`
+    }
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body?.msg || body?.message || 'No pude leer usuarios de Supabase Auth.');
+  return Array.isArray(body?.users) ? body.users : [];
+}
+
+async function createFamilyAuthUser(url, key, email) {
+  const res = await fetch(`${url}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      email,
+      password: familyPassword(),
+      email_confirm: true,
+      user_metadata: { app: 'finanzas-casa', purpose: 'shared-family-state' }
+    })
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body?.msg || body?.message || 'No pude crear el usuario familiar en Supabase Auth.');
+  return body;
+}
+
+async function familyUserId() {
+  const configured = env('FAMILY_SYNC_USER_ID');
+  if (configured) return configured;
+  const { url, key } = supabaseConfig();
+  const email = familyEmail();
+  const users = await listAuthUsers(url, key);
+  const existing = users.find(user => String(user.email || '').toLowerCase() === email);
+  if (existing?.id) return existing.id;
+  try {
+    const created = await createFamilyAuthUser(url, key, email);
+    if (created?.id) return created.id;
+  } catch (err) {
+    const nextUsers = await listAuthUsers(url, key);
+    const nextExisting = nextUsers.find(user => String(user.email || '').toLowerCase() === email);
+    if (nextExisting?.id) return nextExisting.id;
+    throw err;
+  }
+  throw new Error('No pude preparar el usuario familiar de Supabase.');
 }
 
 async function readState(userId) {
@@ -125,7 +177,7 @@ export default async request => {
   try {
     requireAllowedOrigin(request);
     requireAppSession(request);
-    const userId = stableFamilyId();
+    const userId = await familyUserId();
     const body = await request.json();
 
     if (body.action === 'download') {
