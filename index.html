@@ -64,7 +64,7 @@
   .nav-label { color: var(--text3); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; margin: 8px 8px 2px; }
   .nav button { display: flex; align-items: center; gap: 8px; border: 1px solid transparent; background: transparent; color: var(--text2); border-radius: 6px; padding: 9px 10px; cursor: pointer; text-align: left; }
   .nav button:hover { background: color-mix(in srgb, var(--green-bg) 22%, var(--surface2)); color: var(--text); border-color: color-mix(in srgb, var(--green) 28%, transparent); }
-  .app-toolbar { display: flex; justify-content: flex-end; align-items: center; min-height: 30px; margin-bottom: 12px; }
+  .app-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 30px; margin-bottom: 12px; }
   .back-floating { width: fit-content; min-height: 30px; padding: 5px 10px; font-size: 12px; border-color: #0b5f58; background: #0b5f58; color: #fff; box-shadow: 0 8px 18px rgba(11, 95, 88, .16); }
   .back-floating:hover { background: #084b46; color: #fff; }
   .back-floating:disabled { display: none; }
@@ -163,6 +163,17 @@
   .empty { color: var(--text2); text-align: center; padding: 36px 20px; }
   .toast { position: fixed; right: 22px; bottom: 22px; background: var(--text); color: var(--bg); border-radius: 6px; padding: 10px 14px; transform: translateY(40px); opacity: 0; transition: .2s; z-index: 30; }
   .toast.show { transform: translateY(0); opacity: 1; }
+  .toast button { margin-left: 10px; border: 1px solid color-mix(in srgb, var(--bg) 45%, transparent); background: transparent; color: var(--bg); border-radius: 5px; padding: 5px 8px; cursor: pointer; }
+  .sync-strip { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin: -4px 0 10px; flex-wrap: wrap; }
+  .sync-pill { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); border-radius: 999px; padding: 6px 10px; font-size: 12px; line-height: 1.2; }
+  .sync-pill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--text3); }
+  .sync-pill.synced::before { background: var(--green); }
+  .sync-pill.pending::before { background: var(--amber); }
+  .sync-pill.error::before { background: var(--red); }
+  .meta-line { color: var(--text3); font-size: 11px; margin-top: 3px; overflow-wrap: anywhere; }
+  .trash-list { display: grid; gap: 8px; margin-top: 10px; }
+  .trash-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; background: color-mix(in srgb, var(--surface2) 24%, transparent); }
+  .trash-row strong, .trash-row span { min-width: 0; overflow-wrap: anywhere; }
   .hidden { display: none !important; }
   .auth-screen { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
   .auth-card { width: min(430px, 100%); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; display: grid; gap: 14px; }
@@ -294,6 +305,8 @@
     .page-head { align-items: stretch; gap: 8px; margin-bottom: 10px; }
     .home-quick-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
     .home-quick-actions .btn { min-height: 40px; padding: 7px 8px; font-size: 13px; line-height: 1.2; }
+    .sync-strip { justify-content: stretch; margin: 0 0 8px; }
+    .sync-pill { flex: 1 1 100%; justify-content: center; }
     h2 { font-size: 22px; }
     .page > .card, .page > .grid, .menu-panel > .card, .mateo-panel > .card { margin-bottom: 10px; }
     .card, .card-body, .home-widget, .grid, .two-col > *, #page-dashboard, #page-dashboard > * { min-width: 0; max-width: 100%; }
@@ -364,6 +377,17 @@
     #page-dashboard .table-wrap td:nth-child(3), #page-dashboard .table-wrap td:nth-child(4) { grid-column: 1; color: var(--text2); font-size: 12px; }
     #page-dashboard .table-wrap td:nth-child(3) .badge { max-width: 100%; }
     #page-dashboard .table-wrap td:nth-child(5) { grid-column: 1; grid-row: auto; align-self: start; justify-self: start; white-space: normal; margin-top: 2px; }
+    #page-movimientos .table-wrap { overflow: hidden; }
+    #page-movimientos table { display: block; width: 100%; min-width: 0; }
+    #page-movimientos thead { display: none; }
+    #page-movimientos tbody { display: grid; gap: 8px; width: 100%; }
+    #page-movimientos tr { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--surface2) 28%, transparent); }
+    #page-movimientos td { display: block; border: 0; padding: 0; min-width: 0; max-width: 100%; background: transparent; overflow-wrap: anywhere; }
+    #page-movimientos td.row-check { display: flex; justify-content: flex-start; }
+    #page-movimientos td:nth-child(2) { color: var(--text2); font-size: 12px; }
+    #page-movimientos td:nth-child(3) { font-weight: 700; }
+    #page-movimientos td:nth-child(8) { font-size: 17px; }
+    #page-movimientos td:nth-child(9) { display: flex; gap: 6px; flex-wrap: wrap; }
     th, td { padding: 7px 8px; }
     .row-drag-cell { display: none; }
     .modal-backdrop { padding: 8px; align-items: flex-end; }
@@ -442,6 +466,8 @@
       <details class="nav-config" data-nav-scope="global finance menu mateo">
         <summary>Configuración</summary>
         <button data-icon="X" onclick="exportExcel()">Descargar Excel</button>
+        <button data-icon="J" onclick="exportPlainBackup()">Backup rapido</button>
+        <button data-icon="B" onclick="exportEncryptedBackup()">Backup seguro</button>
         <button data-icon="N" data-page-btn="nube" onclick="showPage('nube')">Nube</button>
         <button data-icon="U" data-admin-only="true" data-page-btn="usuarios" onclick="showPage('usuarios')">Usuarios</button>
         <button data-icon="S" onclick="signOutCloud()">Cerrar sesión</button>
@@ -466,6 +492,7 @@
     </div>
     <div class="app-toolbar">
       <button class="btn back-floating" id="app-back-btn" onclick="goBackInApp()" disabled>← Volver</button>
+      <button class="sync-pill pending" id="sync-pill" onclick="syncCloudNow()">Cambios pendientes</button>
     </div>
     <section class="page active" id="page-home">
       <div class="page-head">
@@ -910,11 +937,23 @@
               <button class="btn primary" onclick="uploadToCloud()">Subir a Supabase</button>
               <button class="btn" onclick="downloadFromCloud()">Bajar de Supabase</button>
               <button class="btn" onclick="exportExcel()">Descargar Excel</button>
+              <button class="btn" onclick="exportPlainBackup()">Backup rapido</button>
               <button class="btn" onclick="exportEncryptedBackup()">Backup seguro</button>
               <button class="btn" onclick="document.getElementById('secure-backup-file').click()">Restaurar backup</button>
             </div>
             <input id="secure-backup-file" class="hidden" type="file" accept=".fincasa,.json,application/json" onchange="importEncryptedBackup(event)">
             <div class="status-box" id="sync-status">Esperando accion.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Papelera</span><span class="muted" id="trash-count"></span></div>
+          <div class="card-body">
+            <p class="muted">Recupera lo eliminado recientemente o vacia la papelera cuando este todo confirmado.</p>
+            <div class="actions" style="margin-top:12px;">
+              <button class="btn" onclick="renderTrash()">Actualizar</button>
+              <button class="btn danger" onclick="clearTrash()">Vaciar papelera</button>
+            </div>
+            <div class="trash-list" id="trash-list"></div>
           </div>
         </div>
       </div>
@@ -1240,7 +1279,7 @@ const ALL_CATEGORIAS = [];
 const COLORS = ['#25734b', '#235b9f', '#b23636', '#916400', '#7057a6', '#0f766e', '#c05220', '#557a2a', '#9d3560', '#64748b', '#7c4a03', '#0e7490'];
 const ICONS = { efectivo: '$', banco: 'B', tarjeta: 'T', ahorro: 'A', otro: 'O' };
 
-let state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], aiRules: [], menuDays: [], shoppingItems: [], shoppingCategories: [], mateoData: [], mateoDataInitialized: false, mateoMedicamentos: [], mateoMedicos: [], mateoRegalos: [], mateoMeriendas: [] };
+let state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], aiRules: [], trash: [], menuDays: [], shoppingItems: [], shoppingCategories: [], mateoData: [], mateoDataInitialized: false, mateoMedicamentos: [], mateoMedicos: [], mateoRegalos: [], mateoMeriendas: [] };
 let currentTipo = 'gasto';
 let editingCuentaId = null;
 let editingMovimientoId = null;
@@ -1262,6 +1301,8 @@ let currentMenuView = 'home';
 let currentMateoView = 'home';
 let appHistory = [];
 let nativeBackArmed = false;
+let syncState = { status: 'pending', text: 'Cambios pendientes', lastSyncedAt: '' };
+let lastUndoTrashId = '';
 
 function createDemoState() {
   const cuentas = [
@@ -1496,6 +1537,7 @@ function load() {
 function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   renderSidebar();
+  if (!applyingCloudState) setSyncState(currentAppToken ? 'pending' : 'error', currentAppToken ? 'Cambios pendientes' : 'Sin sesion de nube');
   scheduleCloudSync();
 }
 function showPage(id) {
@@ -1625,13 +1667,15 @@ function eliminarMovimiento(id) {
 
 function eliminarMovimiento(id) {
   if (!confirm('Eliminar este movimiento?')) return;
+  const item = state.movimientos.find(m => m.id === id);
+  const trashId = addTrash('movimientos', stampItem({ ...(item || {}) }, 'deleted'), id);
   if (!Array.isArray(state.deletedMovimientos)) state.deletedMovimientos = [];
   if (!state.deletedMovimientos.includes(id)) state.deletedMovimientos.push(id);
   selectedMovimientoIds.delete(id);
   state.movimientos = state.movimientos.filter(m => m.id !== id);
   save();
   refreshAll();
-  toast('Movimiento eliminado');
+  toastUndo('Movimiento eliminado', trashId);
 }
 function visibleMovimientoIds() {
   return getFilteredMovimientos().map(m => m.id).filter(Boolean);
@@ -1672,13 +1716,15 @@ function eliminarMovimientosSeleccionados() {
   if (!confirm(`Eliminar ${ids.length} movimiento${ids.length === 1 ? '' : 's'} seleccionado${ids.length === 1 ? '' : 's'}?`)) return;
   if (!Array.isArray(state.deletedMovimientos)) state.deletedMovimientos = [];
   ids.forEach(id => {
+    const item = state.movimientos.find(m => m.id === id);
+    addTrash('movimientos', stampItem({ ...(item || {}) }, 'deleted'), id);
     if (!state.deletedMovimientos.includes(id)) state.deletedMovimientos.push(id);
     selectedMovimientoIds.delete(id);
   });
   state.movimientos = state.movimientos.filter(m => !ids.includes(m.id));
   save();
   refreshAll();
-  toast(`${ids.length} movimiento${ids.length === 1 ? '' : 's'} eliminado${ids.length === 1 ? '' : 's'}`);
+  toastUndo(`${ids.length} movimiento${ids.length === 1 ? '' : 's'} eliminado${ids.length === 1 ? '' : 's'}`);
 }
 function editarMovimiento(id) {
   const mov = state.movimientos.find(m => m.id === id);
@@ -2824,11 +2870,24 @@ async function downloadFromCloud() {
   refreshAll();
   setCloudText('sync-status', `Datos descargados. Última nube: ${new Date(data.updated_at).toLocaleString('es-UY')}`);
 }
-function toast(msg) {
+function toast(msg, action = null) {
   const el = document.getElementById('toast');
-  el.textContent = msg;
+  el.textContent = '';
+  el.append(document.createTextNode(msg));
+  if (action?.label && typeof action.onclick === 'function') {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = action.label;
+    btn.onclick = event => {
+      event.stopPropagation();
+      action.onclick();
+      el.classList.remove('show');
+    };
+    el.append(btn);
+  }
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2400);
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => el.classList.remove('show'), action ? 5200 : 2400);
 }
 function refreshAll() {
   renderSidebar();
@@ -2887,6 +2946,7 @@ function ensureStateShape(options = {}) {
   ensureDeleteMarkers();
   if (!Array.isArray(state.categories)) state.categories = [];
   if (!Array.isArray(state.aiRules)) state.aiRules = [];
+  if (!Array.isArray(state.trash)) state.trash = [];
   if (!Array.isArray(state.appUsers)) state.appUsers = [];
   if (!Array.isArray(state.menuDays)) state.menuDays = [];
   if (!Array.isArray(state.shoppingItems)) state.shoppingItems = [];
@@ -2906,6 +2966,164 @@ function ensureStateShape(options = {}) {
   const storedUsers = options.mergeStoredUsers === false ? [] : loadStoredAppUsers();
   state.appUsers = mergeAppUsers(state.appUsers, storedUsers);
   persistAppUsers();
+}
+function currentActorName() {
+  return currentAppUser?.username || (IS_DEMO ? 'Demo' : 'Sin sesion');
+}
+function stampItem(item, action = 'updated') {
+  if (!item) return item;
+  const now = new Date().toISOString();
+  const user = currentActorName();
+  if (action === 'created' && !item.createdAt) {
+    item.createdAt = now;
+    item.createdBy = user;
+  }
+  if (action === 'deleted') {
+    item.deletedAt = now;
+    item.deletedBy = user;
+  }
+  item.updatedAt = now;
+  item.updatedBy = user;
+  return item;
+}
+function metaLine(item) {
+  const user = item?.updatedBy || item?.createdBy || item?.deletedBy || '';
+  const date = item?.updatedAt || item?.createdAt || item?.deletedAt || '';
+  if (!user && !date) return '';
+  const parts = [];
+  if (user) parts.push(`Por ${esc(user)}`);
+  if (date) parts.push(new Date(date).toLocaleString('es-UY'));
+  return `<div class="meta-line">${parts.join(' · ')}</div>`;
+}
+function setSyncState(status, text, lastSyncedAt = syncState.lastSyncedAt) {
+  syncState = { status, text, lastSyncedAt };
+  updateSyncPill();
+}
+function updateSyncPill() {
+  const pill = document.getElementById('sync-pill');
+  if (!pill) return;
+  pill.className = `sync-pill ${syncState.status}`;
+  pill.textContent = syncState.text;
+  pill.title = syncState.lastSyncedAt ? `Ultima sincronizacion: ${new Date(syncState.lastSyncedAt).toLocaleString('es-UY')}` : syncState.text;
+}
+function trashLabel(entry) {
+  const item = entry?.item || {};
+  if (entry.type === 'movimientos') return `${dateFmt(item.fecha)} · ${item.desc || item.categoria || 'Movimiento'} · ${money(item.monto || 0)}`;
+  if (entry.type === 'menuDays') return `Comida ${dateFmt(item.fecha)}`;
+  if (entry.type === 'shoppingItems') return `${item.item || 'Compra'}${item.categoria ? ' · ' + item.categoria : ''}`;
+  if (entry.type === 'shoppingCategories') return `Lugar/categoria ${item.nombre || item.value || ''}`;
+  if (entry.type === 'categories') return `Categoria ${item.nombre || ''}`;
+  if (entry.type === 'mateoData') return `${item.nombre || 'Dato Mateo'}${item.valor ? ' · ' + item.valor : ''}`;
+  if (entry.type === 'mateoMeriendas') return `Merienda ${dateFmt(item.fecha)}`;
+  return item.texto || item.nombre || entry.type || 'Elemento';
+}
+function addTrash(type, item, marker = '', idMarker = '') {
+  if (!item) return '';
+  ensureStateShape({ mergeStoredUsers: false });
+  const entry = {
+    id: uid(),
+    type,
+    item: { ...item },
+    marker,
+    idMarker,
+    deletedAt: new Date().toISOString(),
+    deletedBy: currentActorName()
+  };
+  state.trash.unshift(entry);
+  state.trash = state.trash.slice(0, 80);
+  lastUndoTrashId = entry.id;
+  return entry.id;
+}
+function toastUndo(message, trashId = lastUndoTrashId) {
+  toast(message, trashId ? { label: 'Deshacer', onclick: () => restoreTrashItem(trashId) } : null);
+}
+function restoreTrashItem(id) {
+  ensureStateShape({ mergeStoredUsers: false });
+  const entry = state.trash.find(row => row.id === id);
+  if (!entry) return toast('No encontre ese elemento en papelera.');
+  const item = { ...(entry.item || {}) };
+  delete item.deletedAt;
+  delete item.deletedBy;
+  stampItem(item, 'updated');
+  if (entry.marker) {
+    const markerMap = {
+      movimientos: 'deletedMovimientos',
+      menuDays: 'deletedMenuDays',
+      shoppingItems: 'deletedShoppingItems',
+      shoppingCategories: 'deletedShoppingCategories',
+      categories: 'deletedCategories',
+      mateoData: 'deletedMateoData',
+      mateoMedicamentos: 'deletedMateoMedicamentos',
+      mateoMedicos: 'deletedMateoMedicos',
+      mateoRegalos: 'deletedMateoRegalos',
+      mateoMeriendas: 'deletedMateoMeriendas'
+    };
+    const markerName = markerMap[entry.type];
+    if (markerName) forgetDeleted(markerName, entry.marker);
+  }
+  if (entry.idMarker) {
+    const idMarkerMap = {
+      shoppingItems: 'deletedShoppingItemIds',
+      categories: 'deletedCategoryIds',
+      mateoData: 'deletedMateoDataIds',
+      mateoMedicamentos: 'deletedMateoMedicamentoIds',
+      mateoMedicos: 'deletedMateoMedicoIds',
+      mateoRegalos: 'deletedMateoRegaloIds',
+      mateoMeriendas: 'deletedMateoMeriendaIds'
+    };
+    const idMarkerName = idMarkerMap[entry.type];
+    if (idMarkerName) forgetDeleted(idMarkerName, entry.idMarker);
+  }
+  const upsert = (list, keyFn) => {
+    const key = keyFn(item);
+    const idx = list.findIndex(row => keyFn(row) === key);
+    if (idx >= 0) list[idx] = item;
+    else list.push(item);
+  };
+  if (entry.type === 'movimientos') {
+    forgetDeleted('deletedMovimientos', item.id);
+    upsert(state.movimientos, row => row.id);
+  } else if (entry.type === 'menuDays') {
+    upsert(state.menuDays, row => row.fecha);
+    state.menuDays.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+  } else if (entry.type === 'shoppingItems') {
+    upsert(state.shoppingItems, row => row.id);
+  } else if (entry.type === 'shoppingCategories') {
+    if (!state.shoppingCategories.some(c => normalizeKey(c) === normalizeKey(item.value || item.nombre))) state.shoppingCategories.push(item.value || item.nombre);
+  } else if (entry.type === 'categories') {
+    upsert(state.categories, row => row.id || `${row.tipo}|${normalizeKey(row.nombre)}`);
+  } else if (entry.type === 'mateoData') {
+    upsert(state.mateoData, row => row.id || normalizeKey(row.nombre));
+    state.mateoDataInitialized = true;
+  } else if (entry.type === 'mateoMedicamentos' || entry.type === 'mateoMedicos' || entry.type === 'mateoRegalos' || entry.type === 'mateoMeriendas') {
+    upsert(state[entry.type], row => row.id || deletionKeyFor(entry.type, row));
+  }
+  state.trash = state.trash.filter(row => row.id !== id);
+  save();
+  refreshAll();
+  renderTrash();
+  toast('Elemento restaurado');
+}
+function renderTrash() {
+  ensureStateShape({ mergeStoredUsers: false });
+  const list = document.getElementById('trash-list');
+  const count = document.getElementById('trash-count');
+  if (count) count.textContent = `${state.trash.length} items`;
+  if (!list) return;
+  list.innerHTML = state.trash.length ? state.trash.slice(0, 20).map(entry => `
+    <div class="trash-row">
+      <div><strong>${esc(trashLabel(entry))}</strong><div class="meta-line">Eliminado por ${esc(entry.deletedBy || '-')} · ${new Date(entry.deletedAt).toLocaleString('es-UY')}</div></div>
+      <button class="btn sm" onclick="restoreTrashItem('${entry.id}')">Restaurar</button>
+    </div>`).join('') : '<div class="empty">La papelera esta vacia.</div>';
+}
+function clearTrash() {
+  ensureStateShape({ mergeStoredUsers: false });
+  if (!state.trash.length) return toast('La papelera esta vacia.');
+  if (!confirm('Vaciar la papelera? Esto no se puede deshacer desde la app.')) return;
+  state.trash = [];
+  save();
+  renderTrash();
+  toast('Papelera vaciada');
 }
 function getCategories(tipo) {
   ensureStateShape();
@@ -3011,6 +3229,7 @@ function save() {
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   renderSidebar();
+  if (!applyingCloudState) setSyncState(currentAppToken ? 'pending' : 'error', currentAppToken ? 'Cambios pendientes' : 'Sin sesion de nube');
   scheduleCloudSync();
 }
 async function hashPassword(password) {
@@ -3267,7 +3486,7 @@ function guardarMovimiento() {
   const notas = document.getElementById('m-notas').value.trim();
   if (!categoria || !desc || !monto || !fecha || !cuentaId) return toast('Completá categoría, monto, fecha y cuenta.');
   if (currentTipo !== 'transferencia' && !categoryNames(currentTipo).includes(categoria)) return toast('Primero creá esa categoría en la sección Categorías.');
-  const mov = { id: editingMovimientoId || uid(), tipo: currentTipo, concepto: categoria, categoria, desc, monto: Math.abs(monto), fecha, cuentaId, notas };
+  const mov = stampItem({ id: editingMovimientoId || uid(), tipo: currentTipo, concepto: categoria, categoria, desc, monto: Math.abs(monto), fecha, cuentaId, notas }, editingMovimientoId ? 'updated' : 'created');
   if (currentTipo === 'transferencia') {
     mov.cuentaDestId = document.getElementById('m-cuenta-dest').value;
     if (!mov.cuentaDestId || mov.cuentaDestId === cuentaId) return toast('Elegí una cuenta destino diferente.');
@@ -3284,7 +3503,7 @@ function guardarMovimiento() {
 }
 function addMovimiento({ tipo, concepto, categoria, desc, monto, fecha, cuentaId, notas, cuentaDestId }) {
   const finalCategoria = categoria || concepto || defaultCategory(tipo);
-  const mov = { id: uid(), tipo, concepto: finalCategoria, categoria: finalCategoria, desc: desc || finalCategoria, monto: Math.abs(Number(monto) || 0), fecha, cuentaId, notas: notas || '' };
+  const mov = stampItem({ id: uid(), tipo, concepto: finalCategoria, categoria: finalCategoria, desc: desc || finalCategoria, monto: Math.abs(Number(monto) || 0), fecha, cuentaId, notas: notas || '' }, 'created');
   if (cuentaDestId) mov.cuentaDestId = cuentaDestId;
   state.movimientos.push(mov);
   if (tipo !== 'transferencia') learnCategoryRule(mov.desc, tipo, finalCategoria, 'movement');
@@ -3325,7 +3544,7 @@ function renderHome() {
   movements.innerHTML = latest.length ? latest.map(m => {
     const cls = m.tipo === 'ingreso' ? 'green' : m.tipo === 'gasto' ? 'red' : 'blue';
     const sign = m.tipo === 'ingreso' ? '+' : m.tipo === 'gasto' ? '-' : '';
-    return `<tr><td>${dateFmt(m.fecha)}</td><td><div class="movement-info"><strong>${esc(m.desc || m.categoria || '')}</strong><span>${esc(m.categoria || m.tipo || '')}</span></div></td><td class="right ${cls}"><strong>${sign} ${money(m.monto)}</strong></td></tr>`;
+    return `<tr><td>${dateFmt(m.fecha)}</td><td><div class="movement-info"><strong>${esc(m.desc || m.categoria || '')}</strong><span>${esc(m.categoria || m.tipo || '')}</span>${metaLine(m)}</div></td><td class="right ${cls}"><strong>${sign} ${money(m.monto)}</strong></td></tr>`;
   }).join('') : '<tr><td colspan="3"><div class="empty">Sin movimientos todavía.</div></td></tr>';
   shopping.innerHTML = renderShoppingCards(2);
   const nextMeriendas = state.mateoMeriendas.slice().sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || ''))).slice(0, 6);
@@ -3491,11 +3710,11 @@ function renderRows(tbody, movs, withActions = true) {
     const sign = m.tipo === 'ingreso' ? '+' : m.tipo === 'gasto' ? '-' : '⇄';
     const cls = m.tipo === 'ingreso' ? 'green' : m.tipo === 'gasto' ? 'red' : 'blue';
     const desc = m.desc || m.categoria || '';
-    if (!withActions) return `<tr><td>${dateFmt(m.fecha)}</td><td>${desc}</td><td><span class="badge gray">${m.categoria || '-'}</span></td><td>${cuenta ? cuenta.nombre : '-'}</td><td class="right ${cls}"><strong>${sign} ${money(m.monto)}</strong></td></tr>`;
+    if (!withActions) return `<tr><td>${dateFmt(m.fecha)}</td><td>${desc}${metaLine(m)}</td><td><span class="badge gray">${m.categoria || '-'}</span></td><td>${cuenta ? cuenta.nombre : '-'}</td><td class="right ${cls}"><strong>${sign} ${money(m.monto)}</strong></td></tr>`;
     return `<tr>
       <td class="row-check"><input type="checkbox" ${selectedMovimientoIds.has(m.id) ? 'checked' : ''} onchange="toggleMovimientoSelection('${m.id}', this.checked)"></td>
       <td>${dateFmt(m.fecha)}</td>
-      <td>${desc}${m.notas ? `<br><small class="muted">${m.notas}</small>` : ''}</td>
+      <td>${desc}${m.notas ? `<br><small class="muted">${m.notas}</small>` : ''}${metaLine(m)}</td>
       <td><span class="badge gray">${categoryGroup(m.categoria)}</span></td>
       <td><span class="badge gray">${m.categoria || '-'}</span></td>
       <td>${cuenta ? cuenta.nombre : '-'}</td>
@@ -3531,10 +3750,10 @@ function guardarCategoria() {
     const cat = state.categories.find(c => c.id === editingCategoriaId);
     const oldName = cat.nombre;
     const oldType = cat.tipo;
-    Object.assign(cat, { nombre, tipo, grupo, recurrente });
+    Object.assign(cat, stampItem({ nombre, tipo, grupo, recurrente }, 'updated'));
     state.movimientos.forEach(m => { if (m.tipo === oldType && m.categoria === oldName) { m.categoria = nombre; m.concepto = nombre; } });
     state.presupuestos.forEach(p => { if (p.categoria === oldName) { p.categoria = nombre; p.key = `${p.mes}_${nombre}`; } });
-  } else state.categories.push({ id: uid(), nombre, tipo, grupo, recurrente });
+  } else state.categories.push(stampItem({ id: uid(), nombre, tipo, grupo, recurrente }, 'created'));
   save();
   closeModal('modal-categoria');
   refreshAll();
@@ -3545,13 +3764,14 @@ function eliminarCategoria() {
   if (!cat) return;
   const used = state.movimientos.some(m => m.categoria === cat.nombre) || state.presupuestos.some(p => p.categoria === cat.nombre);
   if (used && !confirm('Esta categoría tiene movimientos o presupuestos. Si la eliminás, esos registros quedan con la categoría guardada pero ya no aparecerá como opción. ¿Continuar?')) return;
+  const trashId = addTrash('categories', stampItem({ ...cat }, 'deleted'), deletionKeyFor('categories', cat), cat.id);
   rememberDeleted('deletedCategories', deletionKeyFor('categories', cat));
   rememberDeleted('deletedCategoryIds', cat.id);
   state.categories = state.categories.filter(c => c.id !== editingCategoriaId);
   save();
   closeModal('modal-categoria');
   refreshAll();
-  toast('Categoría eliminada');
+  toastUndo('Categoría eliminada', trashId);
 }
 function renderCategorias() {
   ensureStateShape();
@@ -3788,7 +4008,7 @@ function createShoppingItem({ item, cantidad = '', categoria = 'Sin categoría',
   forgetDeleted('deletedShoppingItems', deletionKeyFor('shoppingItems', { categoria, item }));
   forgetDeleted('deletedShoppingCategories', deletionKeyFor('shoppingCategories', categoria));
   state.shoppingCategories = unique(state.shoppingCategories.concat(categoria));
-  state.shoppingItems.push({ id: uid(), categoria, item, cantidad: String(cantidad || '').trim(), notas: String(notas || '').trim(), compradoAt: '' });
+  state.shoppingItems.push(stampItem({ id: uid(), categoria, item, cantidad: String(cantidad || '').trim(), notas: String(notas || '').trim(), compradoAt: '' }, 'created'));
   save();
   renderMenu();
   return true;
@@ -3846,11 +4066,12 @@ function addShoppingCategory() {
 function deleteShoppingCategory(category) {
   category = decodeURIComponent(category);
   if (state.shoppingItems.some(i => normalizeKey(i.categoria) === normalizeKey(category))) return toast('Primero eliminá o cambiá las compras de esa categoría.');
+  const trashId = addTrash('shoppingCategories', stampItem({ value: category, nombre: category }, 'deleted'), deletionKeyFor('shoppingCategories', category));
   rememberDeleted('deletedShoppingCategories', deletionKeyFor('shoppingCategories', category));
   state.shoppingCategories = state.shoppingCategories.filter(c => normalizeKey(c) !== normalizeKey(category));
   save();
   renderMenu();
-  toast('Categoría eliminada');
+  toastUndo('Categoría eliminada', trashId);
 }
 function addShoppingItem() {
   const item = String(document.getElementById('shop-item')?.value || '').trim();
@@ -3863,12 +4084,13 @@ function addShoppingItem() {
 }
 function deleteShoppingItem(id) {
   const item = state.shoppingItems.find(item => item.id === id);
+  const trashId = addTrash('shoppingItems', stampItem({ ...(item || {}) }, 'deleted'), item ? deletionKeyFor('shoppingItems', item) : '', id);
   if (item) rememberDeleted('deletedShoppingItems', deletionKeyFor('shoppingItems', item));
   rememberDeleted('deletedShoppingItemIds', id);
   state.shoppingItems = state.shoppingItems.filter(item => item.id !== id);
   save();
   renderMenu();
-  toast('Compra eliminada');
+  toastUndo('Compra eliminada', trashId);
 }
 function toggleShoppingBought(id) {
   const item = state.shoppingItems.find(row => row.id === id);
@@ -3938,7 +4160,7 @@ function saveMealFromModal() {
   if (!almuerzo && !cena) return toast('Agregá almuerzo o cena.');
   forgetDeleted('deletedMenuDays', fecha);
   state.menuDays = state.menuDays.filter(day => day.fecha !== oldFecha && day.fecha !== fecha);
-  state.menuDays.push({ id: `menu-${fecha}`, fecha, almuerzo, cena, updatedAt });
+  state.menuDays.push(stampItem({ id: `menu-${fecha}`, fecha, almuerzo, cena, updatedAt }, oldFecha ? 'updated' : 'created'));
   state.menuDays.sort((a, b) => a.fecha.localeCompare(b.fecha));
   save();
   closeModal('modal-meal');
@@ -3946,11 +4168,13 @@ function saveMealFromModal() {
   toast(oldFecha ? 'Comida actualizada' : 'Comida agregada');
 }
 function deleteMeal(fecha) {
+  const item = state.menuDays.find(day => day.fecha === fecha);
+  const trashId = addTrash('menuDays', stampItem({ ...(item || { fecha }) }, 'deleted'), fecha);
   rememberDeleted('deletedMenuDays', fecha);
   state.menuDays = state.menuDays.filter(day => day.fecha !== fecha);
   save();
   renderMenu();
-  toast('Comida eliminada');
+  toastUndo('Comida eliminada', trashId);
 }
 function deleteMealFromModal() {
   const fecha = document.getElementById('meal-id').value;
@@ -4034,8 +4258,8 @@ function saveMateoData() {
   if (id) forgetDeleted('deletedMateoDataIds', id);
   if (id) {
     const item = state.mateoData.find(row => row.id === id);
-    if (item) Object.assign(item, { nombre, valor, deletedAt: '', updatedAt });
-  } else state.mateoData.push({ id: uid(), nombre, valor, sortOrder: nextMateoOrder('mateoData'), updatedAt });
+    if (item) Object.assign(item, stampItem({ nombre, valor, deletedAt: '', updatedAt }, 'updated'));
+  } else state.mateoData.push(stampItem({ id: uid(), nombre, valor, sortOrder: nextMateoOrder('mateoData'), updatedAt }, 'created'));
   save();
   closeModal('modal-mateo-data');
   renderMateo();
@@ -4048,10 +4272,11 @@ function deleteMateoData(id) {
   if (item) rememberDeleted('deletedMateoData', deletedKey);
   rememberDeleted('deletedMateoDataIds', id);
   state.mateoDataInitialized = true;
-  if (item) Object.assign(item, { deletedAt: updatedAt, updatedAt });
+  const trashId = addTrash('mateoData', stampItem({ ...(item || {}) }, 'deleted'), deletedKey, id);
+  if (item) Object.assign(item, stampItem({ deletedAt: updatedAt }, 'deleted'));
   save();
   renderMateo();
-  toast('Dato eliminado');
+  toastUndo('Dato eliminado', trashId);
 }
 function openMateoListModal(kind, id = '') {
   const key = mateoListKey(kind);
@@ -4074,8 +4299,8 @@ function saveMateoListItem() {
   if (!texto) return toast('Ingresá un detalle.');
   if (id) {
     const item = state[key].find(row => row.id === id);
-    if (item) Object.assign(item, { texto, ...(kind === 'medicos' ? { fecha } : {}) });
-  } else state[key].push({ id: uid(), texto, ...(kind === 'medicos' ? { fecha } : {}) });
+    if (item) Object.assign(item, stampItem({ texto, ...(kind === 'medicos' ? { fecha } : {}) }, 'updated'));
+  } else state[key].push(stampItem({ id: uid(), texto, ...(kind === 'medicos' ? { fecha } : {}) }, 'created'));
   save();
   closeModal('modal-mateo-list');
   renderMateo();
@@ -4089,10 +4314,11 @@ function deleteMateoListItem(kind, id) {
   const updatedAt = new Date().toISOString();
   if (marker && item) rememberDeleted(marker, deletionKeyFor(key, item));
   if (idMarker) rememberDeleted(idMarker, id);
-  if (item) Object.assign(item, { deletedAt: updatedAt, updatedAt });
+  const trashId = addTrash(key, stampItem({ ...(item || {}) }, 'deleted'), item ? deletionKeyFor(key, item) : '', id);
+  if (item) Object.assign(item, stampItem({ deletedAt: updatedAt }, 'deleted'));
   save();
   renderMateo();
-  toast('Eliminado');
+  toastUndo('Eliminado', trashId);
 }
 function renderMateo() {
   ensureStateShape();
@@ -4107,7 +4333,7 @@ function renderMateo() {
   if (dataBody) {
     dataBody.innerHTML = mateoData.length ? mateoData.map(item => `<tr draggable="true" ondragstart="startRowDrag(event,'mateoData','${item.id}')" ondragover="rowDragOver(event,'mateoData')" ondragleave="rowDragLeave(event)" ondragend="clearRowDrag()" ondrop="dropMateoRow(event,'mateoData','${item.id}')">
       ${dragHandleMarkup()}
-      <td>${esc(item.nombre)}</td><td>${esc(item.valor || '')}</td>
+      <td>${esc(item.nombre)}${metaLine(item)}</td><td>${esc(item.valor || '')}</td>
       <td class="right"><button class="btn sm" onclick="openMateoDataModal('${item.id}')">Editar</button><button class="btn sm danger" onclick="deleteMateoData('${item.id}')">Eliminar</button></td>
     </tr>`).join('') : '<tr><td colspan="4"><div class="empty">Sin datos cargados.</div></td></tr>';
   }
@@ -4143,7 +4369,7 @@ function renderMateoList(kind) {
   const rows = orderedMateoItems(key);
   body.innerHTML = rows.length ? rows.map(item => `<tr draggable="true" ondragstart="startRowDrag(event,'${key}','${item.id}')" ondragover="rowDragOver(event,'${key}')" ondragleave="rowDragLeave(event)" ondragend="clearRowDrag()" ondrop="dropMateoRow(event,'${key}','${item.id}')">
     ${dragHandleMarkup()}
-    <td><div class="compact-row ${kind === 'medicos' && !item.fecha ? 'pending' : ''}"><span>${esc(item.texto || '')}</span>${kind === 'medicos' ? `<strong>${esc(mateoDoctorStatus(item))}</strong>` : ''}</div></td>
+    <td><div class="compact-row ${kind === 'medicos' && !item.fecha ? 'pending' : ''}"><span>${esc(item.texto || '')}${metaLine(item)}</span>${kind === 'medicos' ? `<strong>${esc(mateoDoctorStatus(item))}</strong>` : ''}</div></td>
     <td class="right"><button class="btn sm" onclick="openMateoListModal('${kind}','${item.id}')">Editar</button><button class="btn sm danger" onclick="deleteMateoListItem('${kind}','${item.id}')">Eliminar</button></td>
   </tr>`).join('') : '<tr><td colspan="3"><div class="empty">Sin datos cargados.</div></td></tr>';
 }
@@ -4176,8 +4402,8 @@ function saveMateoListItem() {
   if (idMarker && id) forgetDeleted(idMarker, id);
   if (id) {
     const item = state[key].find(row => row.id === id);
-    if (item) Object.assign(item, { texto, deletedAt: '', updatedAt, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) });
-  } else state[key].push({ id: uid(), texto, sortOrder: nextMateoOrder(key), updatedAt, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) });
+    if (item) Object.assign(item, stampItem({ texto, deletedAt: '', updatedAt, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) }, 'updated'));
+  } else state[key].push(stampItem({ id: uid(), texto, sortOrder: nextMateoOrder(key), updatedAt, ...(kind === 'medicos' ? { fecha, mesAgenda } : {}) }, 'created'));
   save();
   closeModal('modal-mateo-list');
   renderMateo();
@@ -4189,8 +4415,8 @@ function addMateoMerienda() {
   if (!fecha) return toast('Elegí una fecha.');
   forgetDeleted('deletedMateoMeriendas', fecha);
   const item = state.mateoMeriendas.find(item => item.fecha === fecha);
-  if (item) Object.assign(item, { texto: item.texto || 'Merienda Mateo', deletedAt: '', updatedAt });
-  else state.mateoMeriendas.push({ id: uid(), fecha, texto: 'Merienda Mateo', sortOrder: nextMateoOrder('mateoMeriendas'), updatedAt });
+  if (item) Object.assign(item, stampItem({ texto: item.texto || 'Merienda Mateo', deletedAt: '', updatedAt }, 'updated'));
+  else state.mateoMeriendas.push(stampItem({ id: uid(), fecha, texto: 'Merienda Mateo', sortOrder: nextMateoOrder('mateoMeriendas'), updatedAt }, 'created'));
   state.mateoMeriendas.sort((a, b) => a.fecha.localeCompare(b.fecha));
   save();
   renderMateo();
@@ -4204,7 +4430,7 @@ function renderMateoMeriendas() {
   const rows = orderedMateoItems('mateoMeriendas');
   body.innerHTML = rows.length ? rows.map(item => `<tr draggable="true" ondragstart="startRowDrag(event,'mateoMeriendas','${item.id}')" ondragover="rowDragOver(event,'mateoMeriendas')" ondragleave="rowDragLeave(event)" ondragend="clearRowDrag()" ondrop="dropMateoRow(event,'mateoMeriendas','${item.id}')">
     ${dragHandleMarkup()}
-    <td><div class="compact-row"><span>${dateFmt(item.fecha)}</span></div></td><td><div class="compact-row"><strong>${esc(item.texto || 'Merienda Mateo')}</strong></div></td>
+    <td><div class="compact-row"><span>${dateFmt(item.fecha)}</span></div></td><td><div class="compact-row"><strong>${esc(item.texto || 'Merienda Mateo')}</strong>${metaLine(item)}</div></td>
     <td class="right"><button class="btn sm danger" onclick="deleteMateoMerienda('${item.id}')">Eliminar</button></td>
   </tr>`).join('') : '<tr><td colspan="4"><div class="empty">Sin meriendas agendadas.</div></td></tr>';
 }
@@ -4213,10 +4439,11 @@ function deleteMateoMerienda(id) {
   const updatedAt = new Date().toISOString();
   if (item) rememberDeleted('deletedMateoMeriendas', deletionKeyFor('mateoMeriendas', item));
   rememberDeleted('deletedMateoMeriendaIds', id);
-  if (item) Object.assign(item, { deletedAt: updatedAt, updatedAt });
+  const trashId = addTrash('mateoMeriendas', stampItem({ ...(item || {}) }, 'deleted'), item ? deletionKeyFor('mateoMeriendas', item) : '', id);
+  if (item) Object.assign(item, stampItem({ deletedAt: updatedAt }, 'deleted'));
   save();
   renderMateo();
-  toast('Merienda eliminada');
+  toastUndo('Merienda eliminada', trashId);
 }
 function rowObjectsFromSheet(ws) {
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
@@ -4699,7 +4926,7 @@ function createCategoryFromImport() {
   const recurrente = tipo === 'gasto' && document.getElementById('import-new-recurring').checked;
   if (!nombre) return toast('Ingresá un nombre de categoría.');
   if (state.categories.some(c => c.tipo === tipo && normalizeKey(c.nombre) === normalizeKey(nombre))) return toast('Esa categoría ya existe.');
-  state.categories.push({ id: uid(), nombre, tipo, grupo, recurrente });
+  state.categories.push(stampItem({ id: uid(), nombre, tipo, grupo, recurrente }, 'created'));
   document.getElementById('import-new-category').value = '';
   document.getElementById('import-new-group').value = '';
   document.getElementById('import-new-recurring').checked = false;
@@ -4907,15 +5134,40 @@ async function exportEncryptedBackup() {
     toast('No pude crear el backup: ' + err.message);
   }
 }
+function exportPlainBackup() {
+  if (IS_DEMO) return toast('El demo no guarda backups.');
+  ensureStateShape({ mergeStoredUsers: false });
+  const backup = {
+    version: 1,
+    app: 'finanzas-casa',
+    createdAt: new Date().toISOString(),
+    exportedBy: currentActorName(),
+    data: state
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `finanzas_casa_respaldo_${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Backup rapido descargado');
+}
 async function importEncryptedBackup(event) {
   const file = event.target.files?.[0];
   event.target.value = '';
   if (!file) return;
-  const password = prompt('Clave del backup.');
-  if (!password) return;
   try {
     const backup = JSON.parse(await file.text());
-    const restored = await decryptBackupData(backup, password);
+    let restored = null;
+    if (backup?.cipher) {
+      const password = prompt('Clave del backup.');
+      if (!password) return;
+      restored = await decryptBackupData(backup, password);
+    } else if (backup?.app === 'finanzas-casa' && backup?.data) {
+      restored = backup.data;
+    } else {
+      restored = backup;
+    }
     const normalized = normalizeFinanceState(restored);
     if (!confirm('Esto reemplaza los datos locales actuales por el backup. Continuar?')) return;
     state = { ...state, ...normalized };
@@ -5239,6 +5491,7 @@ function normalizeFinanceState(data) {
     deletedCuentas: Array.isArray(data?.deletedCuentas) ? data.deletedCuentas : [],
     categories: Array.isArray(data?.categories) ? data.categories : [],
     aiRules: Array.isArray(data?.aiRules) ? data.aiRules : [],
+    trash: Array.isArray(data?.trash) ? data.trash : [],
     appUsers: Array.isArray(data?.appUsers) ? data.appUsers : [],
     menuDays: Array.isArray(data?.menuDays) ? data.menuDays : [],
     shoppingItems: Array.isArray(data?.shoppingItems) ? data.shoppingItems : [],
@@ -5265,6 +5518,7 @@ function mergeFinanceStates(localData, cloudData) {
     presupuestos: local.presupuestos.map(p => ({ ...p })),
     categories: local.categories.filter(c => !deleted.deletedCategories.includes(deletionKeyFor('categories', c))).map(c => ({ ...c })),
     aiRules: local.aiRules.map(r => ({ ...r })),
+    trash: [...local.trash.map(t => ({ ...t })), ...cloud.trash.map(t => ({ ...t }))].filter((entry, index, arr) => index === arr.findIndex(row => row.id === entry.id)).slice(0, 80),
     appUsers: local.appUsers.map(u => ({ ...u })),
     menuDays: local.menuDays.filter(d => !deleted.deletedMenuDays.includes(deletionKeyFor('menuDays', d))).map(d => ({ ...d })),
     shoppingItems: local.shoppingItems
@@ -5311,10 +5565,12 @@ function mergeFinanceStates(localData, cloudData) {
 async function syncCloudNow(silent = false) {
   if (IS_DEMO || cloudSyncing) return;
   if (!currentAppToken) {
+    setSyncState('error', 'Inicia sesion para nube');
     setCloudText('sync-status', 'Inicia sesion para sincronizar.');
     return;
   }
   cloudSyncing = true;
+  setSyncState('pending', 'Sincronizando...');
   if (!silent) setCloudText('sync-status', 'Sincronizando...');
   try {
     ensureStateShape({ mergeStoredUsers: false });
@@ -5326,26 +5582,34 @@ async function syncCloudNow(silent = false) {
     applyingCloudState = false;
     refreshAll();
     await financeStateRequest('sync', state);
+    const syncedAt = new Date().toISOString();
+    setSyncState('synced', `Sincronizado ${new Date(syncedAt).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}`, syncedAt);
     setCloudText('sync-status', 'Sincronizado con la nube familiar.');
     setCloudText('cloud-status', 'Nube familiar asociada.');
     if (!silent) toast('Datos sincronizados');
   } catch (err) {
     applyingCloudState = false;
+    setSyncState('error', 'Error de sincronizacion');
     setCloudText('sync-status', 'Error al sincronizar: ' + err.message);
   } finally {
     cloudSyncing = false;
   }
 }
 async function downloadFromCloud() {
-  if (!currentAppToken) return setCloudText('sync-status', 'Inicia sesion para bajar datos.');
+  if (!currentAppToken) {
+    setSyncState('error', 'Inicia sesion para nube');
+    return setCloudText('sync-status', 'Inicia sesion para bajar datos.');
+  }
+  setSyncState('pending', 'Bajando nube...');
   setCloudText('sync-status', 'Bajando datos...');
   const result = await financeStateRequest('download');
   if (!result.state?.data) return setCloudText('sync-status', 'No encontre datos en la nube familiar.');
   if (!confirm('Esto reemplaza los datos locales con lo guardado en Supabase. Continuar?')) return;
-  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], deletedCuentas: [], categories: [], aiRules: [], appUsers: [], menuDays: [], shoppingItems: [], shoppingCategories: [], mateoData: [], mateoDataInitialized: false, mateoMedicamentos: [], mateoMedicos: [], mateoRegalos: [], mateoMeriendas: [], ...(result.state.data || {}) };
+  state = { cuentas: [], movimientos: [], presupuestos: [], deletedMovimientos: [], deletedCuentas: [], categories: [], aiRules: [], trash: [], appUsers: [], menuDays: [], shoppingItems: [], shoppingCategories: [], mateoData: [], mateoDataInitialized: false, mateoMedicamentos: [], mateoMedicos: [], mateoRegalos: [], mateoMeriendas: [], ...(result.state.data || {}) };
   ensureStateShape();
   save();
   refreshAll();
+  setSyncState('synced', `Bajado ${new Date(result.state.updated_at).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}`, result.state.updated_at);
   setCloudText('sync-status', `Datos descargados. Ultima nube: ${new Date(result.state.updated_at).toLocaleString('es-UY')}`);
 }
 function refreshAll() {
@@ -5359,6 +5623,8 @@ function refreshAll() {
   renderPresupuesto();
   renderResumen();
   renderCategorias();
+  renderTrash();
+  updateSyncPill();
 }
 
 if (window.pdfjsLib) {
